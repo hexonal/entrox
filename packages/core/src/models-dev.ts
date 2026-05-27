@@ -106,6 +106,20 @@ export const Provider = Schema.Struct({
 
 export type Provider = Schema.Schema.Type<typeof Provider>
 
+const hiddenProviderIDs = new Set(["opencode", "opencode-go"])
+
+export function sanitize(data: Record<string, Provider> | undefined) {
+  if (!data) return
+  return Object.fromEntries(Object.entries(data).filter(([id]) => !hiddenProviderIDs.has(id))) as Record<
+    string,
+    Provider
+  >
+}
+
+export function sanitizeText(text: string) {
+  return JSON.stringify(sanitize(JSON.parse(text) as Record<string, Provider>))
+}
+
 export const Event = {
   Refreshed: EventV2.define({
     type: "models-dev.refreshed",
@@ -161,17 +175,17 @@ export const layer = Layer.effect(
       )
     })
 
-    const loadFromDisk = fs.readJson(Flag.OPENCODE_MODELS_PATH ?? filepath).pipe(
-      Effect.catch(() => Effect.succeed(undefined)),
-      Effect.map((v) => v as Record<string, Provider> | undefined),
-    )
+    const loadFromDisk = fs
+      .readJson(Flag.OPENCODE_MODELS_PATH ?? filepath)
+      .pipe(
+        Effect.catch(() => Effect.succeed(undefined)),
+        Effect.map((v) => sanitize(v as Record<string, Provider> | undefined)),
+      )
 
-    const loadSnapshot = Effect.sync(() =>
-      typeof OPENCODE_MODELS_DEV === "undefined" ? undefined : OPENCODE_MODELS_DEV,
-    )
+    const loadSnapshot = Effect.sync(() => sanitize(OPENCODE_MODELS_DEV))
 
     const fetchAndWrite = Effect.fn("ModelsDev.fetchAndWrite")(function* () {
-      const text = yield* fetchApi()
+      const text = sanitizeText(yield* fetchApi())
       yield* fs.writeWithDirs(filepath, text)
       return text
     })
@@ -189,7 +203,7 @@ export const layer = Layer.effect(
           return yield* fetchAndWrite()
         }),
       )
-      return JSON.parse(text) as Record<string, Provider>
+      return sanitize(JSON.parse(text) as Record<string, Provider>) ?? {}
     }).pipe(Effect.withSpan("ModelsDev.populate"), Effect.orDie)
 
     const [cachedGet, invalidate] = yield* Effect.cachedInvalidateWithTTL(populate, Duration.infinity)
