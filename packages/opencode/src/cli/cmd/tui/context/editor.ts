@@ -7,6 +7,7 @@ import { Option, Schema, SchemaGetter } from "effect"
 import { isRecord } from "@/util/record"
 import { createSimpleContext } from "./helper"
 import { isZedTerminal, resolveZedDbPath, resolveZedSelection } from "./editor-zed"
+import { Brand } from "@/brand"
 
 const MCP_PROTOCOL_VERSION = "2025-11-25"
 
@@ -222,7 +223,7 @@ export const { use: useEditorContext, provider: EditorContextProvider } = create
         request("initialize", {
           protocolVersion: MCP_PROTOCOL_VERSION,
           capabilities: {},
-          clientInfo: { name: "opencode", version: "0.0.0" },
+          clientInfo: { name: Brand.command, version: "0.0.0" },
         })
       })
 

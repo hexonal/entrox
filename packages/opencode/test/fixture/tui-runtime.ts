@@ -3,6 +3,7 @@ import path from "path"
 import { createBindingLookup } from "@opentui/keymap/extras"
 import { TuiConfig } from "../../src/cli/cmd/tui/config/tui"
 import { TuiKeybind } from "../../src/cli/cmd/tui/config/keybind"
+import { Brand } from "@/brand"
 
 type PluginSpec = string | [string, Record<string, unknown>]
 type ResolvedInput = Omit<TuiConfig.Resolved, "attention" | "keybinds" | "leader_timeout"> & {
@@ -28,7 +29,7 @@ export function createTuiResolvedConfig(input: ResolvedInput = {}): TuiConfig.Re
       notifications: true,
       sound: true,
       volume: 0.4,
-      sound_pack: "opencode.default",
+      sound_pack: Brand.defaultSoundPack,
       sounds: {},
       ...input.attention,
     },

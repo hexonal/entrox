@@ -48,8 +48,8 @@ const envPath = process.env.OPENCODE_BIN_PATH
 const scriptPath = fs.realpathSync(__filename)
 const scriptDir = path.dirname(scriptPath)
 
-//
-const cached = path.join(scriptDir, ".opencode")
+const cached = path.join(scriptDir, ".entrox")
+const legacyCached = path.join(scriptDir, ".opencode")
 
 const platformMap = {
   darwin: "darwin",
@@ -70,8 +70,10 @@ let arch = archMap[os.arch()]
 if (!arch) {
   arch = os.arch()
 }
-const base = "opencode-" + platform + "-" + arch
-const binary = platform === "windows" ? "opencode.exe" : "opencode"
+const base = "entrox-" + platform + "-" + arch
+const legacyBase = "opencode-" + platform + "-" + arch
+const binary = platform === "windows" ? "entrox.exe" : "entrox"
+const legacyBinary = platform === "windows" ? "opencode.exe" : "opencode"
 
 function supportsAvx2() {
   if (arch !== "x64") return false
@@ -168,6 +170,8 @@ const names = (() => {
   return [base]
 })()
 
+const legacyNames = names.map((name) => name.replace(base, legacyBase))
+
 function findBinary(startDir) {
   let current = startDir
   for (;;) {
@@ -175,6 +179,10 @@ function findBinary(startDir) {
     if (fs.existsSync(modules)) {
       for (const name of names) {
         const candidate = path.join(modules, name, "bin", binary)
+        if (fs.existsSync(candidate)) return candidate
+      }
+      for (const name of legacyNames) {
+        const candidate = path.join(modules, name, "bin", legacyBinary)
         if (fs.existsSync(candidate)) return candidate
       }
     }
@@ -186,10 +194,10 @@ function findBinary(startDir) {
   }
 }
 
-const resolved = envPath || (fs.existsSync(cached) ? cached : findBinary(scriptDir))
+const resolved = envPath || (fs.existsSync(cached) ? cached : fs.existsSync(legacyCached) ? legacyCached : findBinary(scriptDir))
 if (!resolved) {
   console.error(
-    "It seems that your package manager failed to install the right version of the opencode CLI for your platform. You can try manually installing " +
+    "It seems that your package manager failed to install the right version of the entrox CLI for your platform. You can try manually installing " +
       names.map((n) => `\"${n}\"`).join(" or ") +
       " package",
   )

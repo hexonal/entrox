@@ -3,6 +3,7 @@ import { MessageGroup } from "./v2/message"
 import { ModelGroup } from "./v2/model"
 import { ProviderGroup } from "./v2/provider"
 import { SessionGroup } from "./v2/session"
+import { Brand } from "@/brand"
 
 export const V2Api = HttpApi.make("v2")
   .add(SessionGroup)
@@ -11,7 +12,7 @@ export const V2Api = HttpApi.make("v2")
   .add(ProviderGroup)
   .annotateMerge(
     OpenApi.annotations({
-      title: "opencode experimental HttpApi",
+      title: `${Brand.command} experimental HttpApi`,
       version: "0.0.1",
       description: "Experimental HttpApi surface for selected instance routes.",
     }),

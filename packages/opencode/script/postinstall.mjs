@@ -24,9 +24,11 @@ const archMap = {
 
 const platform = platformMap[os.platform()] ?? os.platform()
 const arch = archMap[os.arch()] ?? os.arch()
-const base = `opencode-${platform}-${arch}`
-const sourceBinary = platform === "windows" ? "opencode.exe" : "opencode"
-const targetBinary = path.join(__dirname, "bin", "opencode.exe")
+const base = `entrox-${platform}-${arch}`
+const legacyBase = `opencode-${platform}-${arch}`
+const sourceBinary = platform === "windows" ? "entrox.exe" : "entrox"
+const legacySourceBinary = platform === "windows" ? "opencode.exe" : "opencode"
+const targetBinary = path.join(__dirname, "bin", "entrox.exe")
 
 function supportsAvx2() {
   if (arch !== "x64") return false
@@ -116,9 +118,16 @@ function packageNames() {
   return [base]
 }
 
+function packageNamesWithLegacy() {
+  return packageNames().flatMap((name) => [name, name.replace(base, legacyBase)])
+}
+
 function resolveBinary(name) {
   const packageJsonPath = require.resolve(`${name}/package.json`)
-  const binaryPath = path.join(path.dirname(packageJsonPath), "bin", sourceBinary)
+  const packageDir = path.dirname(packageJsonPath)
+  const binaryPath = path.join(packageDir, "bin", sourceBinary)
+  const legacyBinaryPath = path.join(packageDir, "bin", legacySourceBinary)
+  if (!fs.existsSync(binaryPath) && fs.existsSync(legacyBinaryPath)) return legacyBinaryPath
   if (!fs.existsSync(binaryPath)) throw new Error(`Binary not found at ${binaryPath}`)
   return binaryPath
 }
@@ -127,7 +136,7 @@ function installPackage(name) {
   const version = packageJson.optionalDependencies?.[name]
   if (!version) return
 
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "opencode-install-"))
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "entrox-install-"))
   try {
     const result = childProcess.spawnSync(
       "npm",
@@ -136,7 +145,9 @@ function installPackage(name) {
     )
     if (result.status !== 0) return
     const packageDir = path.join(temp, "node_modules", name)
-    copyBinary(path.join(packageDir, "bin", sourceBinary), targetBinary)
+    const binaryPath = path.join(packageDir, "bin", sourceBinary)
+    const legacyBinaryPath = path.join(packageDir, "bin", legacySourceBinary)
+    copyBinary(fs.existsSync(binaryPath) ? binaryPath : legacyBinaryPath, targetBinary)
     return true
   } finally {
     fs.rmSync(temp, { recursive: true, force: true })
@@ -165,7 +176,7 @@ function verifyBinary() {
 }
 
 function main() {
-  for (const name of packageNames()) {
+  for (const name of packageNamesWithLegacy()) {
     try {
       copyBinary(resolveBinary(name), targetBinary)
       if (verifyBinary()) return
@@ -175,7 +186,7 @@ function main() {
   }
 
   throw new Error(
-    `It seems your package manager failed to install the right opencode CLI package. Try manually installing ${packageNames()
+    `It seems your package manager failed to install the right entrox CLI package. Try manually installing ${packageNames()
       .map((name) => JSON.stringify(name))
       .join(" or ")}.`,
   )

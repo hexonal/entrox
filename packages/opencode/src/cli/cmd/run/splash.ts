@@ -1,6 +1,6 @@
 // Entry and exit splash banners for direct interactive mode scrollback.
 //
-// Renders the full opencode entry logo and a compact [O] exit badge, plus
+// Renders the full CLI entry logo and a compact exit badge, plus
 // session metadata and the resume command. These are scrollback snapshots, so
 // they become immutable terminal history once committed.
 //
@@ -21,6 +21,7 @@ import {
 import * as Locale from "@/util/locale"
 import { go, logo } from "@/cli/logo"
 import type { RunSplashTheme } from "./theme"
+import { Brand } from "@/brand"
 
 export const SPLASH_TITLE_LIMIT = 50
 export const SPLASH_TITLE_FALLBACK = "Untitled session"
@@ -263,7 +264,7 @@ function build(input: SplashWriterInput, kind: "entry" | "exit", ctx: Scrollback
       lines,
       body_left + label.length,
       top + 1,
-      `opencode run -i -s ${meta.session_id}`,
+      `${Brand.command} run -i -s ${meta.session_id}`,
       right,
       undefined,
       TextAttributes.BOLD,

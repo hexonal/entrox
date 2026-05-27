@@ -6,12 +6,18 @@ import { Context, Effect, Layer } from "effect"
 import { Flock } from "./util/flock"
 import { Flag } from "./flag/flag"
 
-const app = "opencode"
+const app = "entrox"
+const legacyApp = "opencode"
 const data = path.join(xdgData!, app)
 const cache = path.join(xdgCache!, app)
 const config = path.join(xdgConfig!, app)
 const state = path.join(xdgState!, app)
 const tmp = path.join(os.tmpdir(), app)
+const legacyData = path.join(xdgData!, legacyApp)
+const legacyCache = path.join(xdgCache!, legacyApp)
+const legacyConfig = path.join(xdgConfig!, legacyApp)
+const legacyState = path.join(xdgState!, legacyApp)
+const legacyTmp = path.join(os.tmpdir(), legacyApp)
 
 const paths = {
   get home() {
@@ -28,6 +34,17 @@ const paths = {
 }
 
 export const Path = paths
+
+export const LegacyPath = {
+  data: legacyData,
+  bin: path.join(legacyCache, "bin"),
+  log: path.join(legacyData, "log"),
+  repos: path.join(legacyData, "repos"),
+  cache: legacyCache,
+  config: legacyConfig,
+  state: legacyState,
+  tmp: legacyTmp,
+}
 
 Flock.setGlobal({ state })
 
@@ -60,7 +77,7 @@ export function make(input: Partial<Interface> = {}): Interface {
     home: Path.home,
     data: Path.data,
     cache: Path.cache,
-    config: Flag.OPENCODE_CONFIG_DIR ?? Path.config,
+    config: Flag.ENTROX_CONFIG_DIR ?? Flag.OPENCODE_CONFIG_DIR ?? Path.config,
     state: Path.state,
     tmp: Path.tmp,
     bin: Path.bin,

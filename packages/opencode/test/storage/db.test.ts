@@ -6,14 +6,15 @@ import { InstallationChannel } from "@opencode-ai/core/installation/version"
 import { RuntimeFlags } from "@/effect/runtime-flags"
 import { Database } from "@/storage/db"
 import { it } from "../lib/effect"
+import { Brand } from "@/brand"
 
 describe("Database.getChannelPath", () => {
   it.effect("returns database path for the current channel", () =>
     Effect.gen(function* () {
       const flags = yield* RuntimeFlags.Service
       const expected = ["latest", "beta", "prod"].includes(InstallationChannel)
-        ? path.join(Global.Path.data, "opencode.db")
-        : path.join(Global.Path.data, `opencode-${InstallationChannel.replace(/[^a-zA-Z0-9._-]/g, "-")}.db`)
+        ? path.join(Global.Path.data, `${Brand.databaseBase}.db`)
+        : path.join(Global.Path.data, `${Brand.databaseBase}-${InstallationChannel.replace(/[^a-zA-Z0-9._-]/g, "-")}.db`)
 
       expect(Database.getChannelPath(flags)).toBe(expected)
     }).pipe(Effect.provide(RuntimeFlags.layer())),
@@ -23,7 +24,7 @@ describe("Database.getChannelPath", () => {
     Effect.gen(function* () {
       const flags = yield* RuntimeFlags.Service
 
-      expect(Database.getChannelPath(flags)).toBe(path.join(Global.Path.data, "opencode.db"))
+      expect(Database.getChannelPath(flags)).toBe(path.join(Global.Path.data, `${Brand.databaseBase}.db`))
     }).pipe(Effect.provide(RuntimeFlags.layer({ disableChannelDb: true }))),
   )
 

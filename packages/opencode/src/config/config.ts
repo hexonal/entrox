@@ -337,7 +337,7 @@ export class Service extends Context.Service<Service, Interface>()("@opencode/Co
 export const use = serviceUse(Service)
 
 function globalConfigFile() {
-  const candidates = ["opencode.jsonc", "opencode.json", "config.json"].map((file) =>
+  const candidates = ["entrox.jsonc", "entrox.json", "opencode.jsonc", "opencode.json", "config.json"].map((file) =>
     path.join(Global.Path.config, file),
   )
   for (const file of candidates) {
@@ -444,17 +444,28 @@ export const layer = Layer.effect(
       let result: Info = {}
       // Seed the default global config with the schema for editor completion, but avoid writing when the user
       // explicitly routes config through env-provided paths or content.
-      if (!Flag.OPENCODE_CONFIG && !Flag.OPENCODE_CONFIG_DIR && !Flag.OPENCODE_CONFIG_CONTENT) {
+      if (
+        !Flag.ENTROX_CONFIG &&
+        !Flag.OPENCODE_CONFIG &&
+        !Flag.ENTROX_CONFIG_DIR &&
+        !Flag.OPENCODE_CONFIG_DIR &&
+        !Flag.ENTROX_CONFIG_CONTENT &&
+        !Flag.OPENCODE_CONFIG_CONTENT
+      ) {
         const file = globalConfigFile()
         if (!existsSync(file)) {
           yield* fs
             .writeWithDirs(file, JSON.stringify({ $schema: "https://opencode.ai/config.json" }, null, 2))
             .pipe(Effect.catch(() => Effect.void))
-        }
+          }
+      }
+      for (const file of ConfigPaths.fileInDirectory(Global.LegacyPath.config, "opencode")) {
+        result = mergeConfig(result, yield* loadFile(file, env))
       }
       result = mergeConfig(result, yield* loadFile(path.join(Global.Path.config, "config.json"), env))
-      result = mergeConfig(result, yield* loadFile(path.join(Global.Path.config, "opencode.json"), env))
-      result = mergeConfig(result, yield* loadFile(path.join(Global.Path.config, "opencode.jsonc"), env))
+      for (const file of ConfigPaths.fileInDirectory(Global.Path.config, "opencode")) {
+        result = mergeConfig(result, yield* loadFile(file, env))
+      }
 
       const legacy = path.join(Global.Path.config, "config")
       if (existsSync(legacy)) {
@@ -493,6 +504,7 @@ export const layer = Layer.effect(
       const gitignore = path.join(dir, ".gitignore")
       const hasIgnore = yield* fs.existsSafe(gitignore)
       if (!hasIgnore) {
+        yield* fs.ensureDir(dir).pipe(Effect.catch(() => Effect.void))
         yield* fs
           .writeFileString(
             gitignore,
@@ -518,7 +530,7 @@ export const layer = Layer.effect(
 
         const pluginScopeForSource = Effect.fnUntraced(function* (source: string) {
           if (source.startsWith("http://") || source.startsWith("https://")) return "global"
-          if (source === "OPENCODE_CONFIG_CONTENT") return "local"
+          if (source === "ENTROX_CONFIG_CONTENT" || source === "OPENCODE_CONFIG_CONTENT") return "local"
           if (containsPath(source, ctx)) return "local"
           return "global"
         })
@@ -594,9 +606,10 @@ export const layer = Layer.effect(
         const global = Object.keys(authEnv).length ? yield* loadGlobal(authEnv) : yield* getGlobal()
         yield* merge(Global.Path.config, global, "global")
 
-        if (Flag.OPENCODE_CONFIG) {
-          yield* merge(Flag.OPENCODE_CONFIG, yield* loadFile(Flag.OPENCODE_CONFIG, authEnv))
-          log.debug("loaded custom config", { path: Flag.OPENCODE_CONFIG })
+        const explicitConfig = Flag.ENTROX_CONFIG ?? Flag.OPENCODE_CONFIG
+        if (explicitConfig) {
+          yield* merge(explicitConfig, yield* loadFile(explicitConfig, authEnv))
+          log.debug("loaded custom config", { path: explicitConfig })
         }
 
         if (!Flag.OPENCODE_DISABLE_PROJECT_CONFIG) {
@@ -611,16 +624,17 @@ export const layer = Layer.effect(
 
         const directories = yield* ConfigPaths.directories(ctx.directory, ctx.worktree)
 
-        if (Flag.OPENCODE_CONFIG_DIR) {
-          log.debug("loading config from OPENCODE_CONFIG_DIR", { path: Flag.OPENCODE_CONFIG_DIR })
+        if (Flag.ENTROX_CONFIG_DIR || Flag.OPENCODE_CONFIG_DIR) {
+          log.debug("loading config from custom config directory", {
+            path: Flag.ENTROX_CONFIG_DIR ?? Flag.OPENCODE_CONFIG_DIR,
+          })
         }
 
         const deps: Fiber.Fiber<void>[] = []
 
         for (const dir of directories) {
-          if (dir.endsWith(".opencode") || dir === Flag.OPENCODE_CONFIG_DIR) {
-            for (const file of ["opencode.json", "opencode.jsonc"]) {
-              const source = path.join(dir, file)
+          if (ConfigPaths.isProjectDirectory(dir) || dir === Flag.ENTROX_CONFIG_DIR || dir === Flag.OPENCODE_CONFIG_DIR) {
+            for (const source of ConfigPaths.fileInDirectory(dir, "opencode")) {
               log.debug(`loading config from ${source}`)
               yield* merge(source, yield* loadFile(source, authEnv))
               result.agent ??= {}
@@ -657,20 +671,21 @@ export const layer = Layer.effect(
           result.command = mergeDeep(result.command ?? {}, yield* Effect.promise(() => ConfigCommand.load(dir)))
           result.agent = mergeDeep(result.agent ?? {}, yield* Effect.promise(() => ConfigAgent.load(dir)))
           result.agent = mergeDeep(result.agent ?? {}, yield* Effect.promise(() => ConfigAgent.loadMode(dir)))
-          // Auto-discovered plugins under `.opencode/plugin(s)` are already local files, so ConfigPlugin.load
+          // Auto-discovered plugins under project config plugin directories are already local files, so ConfigPlugin.load
           // returns normalized Specs and we only need to attach origin metadata here.
           const list = yield* Effect.promise(() => ConfigPlugin.load(dir))
           yield* mergePluginOrigins(dir, list)
         }
 
-        if (process.env.OPENCODE_CONFIG_CONTENT) {
-          const source = "OPENCODE_CONFIG_CONTENT"
-          const next = yield* loadConfig(process.env.OPENCODE_CONFIG_CONTENT, {
+        const configContent = process.env.ENTROX_CONFIG_CONTENT ?? process.env.OPENCODE_CONFIG_CONTENT
+        if (configContent) {
+          const source = process.env.ENTROX_CONFIG_CONTENT ? "ENTROX_CONFIG_CONTENT" : "OPENCODE_CONFIG_CONTENT"
+          const next = yield* loadConfig(configContent, {
             dir: ctx.directory,
             source,
           })
           yield* merge(source, next, "local")
-          log.debug("loaded custom config from OPENCODE_CONFIG_CONTENT")
+          log.debug("loaded custom config from environment content", { source })
         }
 
         const activeAccount = Option.getOrUndefined(
@@ -714,8 +729,7 @@ export const layer = Layer.effect(
 
         const managedDir = ConfigManaged.managedConfigDir()
         if (existsSync(managedDir)) {
-          for (const file of ["opencode.json", "opencode.jsonc"]) {
-            const source = path.join(managedDir, file)
+          for (const source of ConfigPaths.fileInDirectory(managedDir, "opencode")) {
             yield* merge(source, yield* loadFile(source), "global")
           }
         }

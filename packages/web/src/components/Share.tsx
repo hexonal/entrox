@@ -5,12 +5,14 @@ import { IconArrowDown } from "./icons"
 import { IconOpencode } from "./icons/custom"
 import { ShareI18nProvider, formatCurrency, formatNumber, normalizeLocale } from "./share/common"
 import styles from "./share.module.css"
-import type { MessageV2 } from "opencode/session/message-v2"
-import type { Message } from "opencode/session/message"
-import type { Session } from "opencode/session/index"
+import type { MessageV2 } from "entrox/session/message-v2"
+import type { Message } from "entrox/session/message"
+import type { Session } from "entrox/session/index"
 import { Part, ProviderIcon } from "./share/part"
 
-type MessageWithParts = MessageV2.Info & { parts: MessageV2.Part[] }
+type MessageWithParts =
+  | (MessageV2.User & { parts: MessageV2.Part[] })
+  | (MessageV2.Assistant & { parts: MessageV2.Part[] })
 
 type Status = "disconnected" | "connecting" | "connected" | "error" | "reconnecting"
 
@@ -38,6 +40,10 @@ function getStatusText(status: [Status, string?], messages: Record<string, strin
   }
 }
 
+function isAssistantMessage(message: MessageWithParts): message is MessageV2.Assistant & { parts: MessageV2.Part[] } {
+  return message.role === "assistant"
+}
+
 export default function Share(props: {
   id: string
   api: string
@@ -62,7 +68,7 @@ export default function Share(props: {
     messages: Record<string, MessageWithParts>
   }>({
     info: {
-      id: props.id,
+      id: props.id as Session.Info["id"],
       slug: props.info.slug,
       projectID: props.info.projectID,
       directory: props.info.directory,
@@ -275,7 +281,7 @@ export default function Share(props: {
 
       result.messages.push(msg)
 
-      if (msg.role === "assistant") {
+      if (isAssistantMessage(msg)) {
         result.cost += msg.cost
         result.tokens.input += msg.tokens.input
         result.tokens.output += msg.tokens.output
@@ -527,11 +533,7 @@ export function fromV1(v1: Message.Info): MessageWithParts {
       mode: "build",
       error: v1.metadata.error,
       parts: v1.parts.flatMap((part, index): MessageV2.Part[] => {
-        const base = {
-          id: index.toString(),
-          messageID: v1.id,
-          sessionID: v1.metadata.sessionID,
-        }
+        const base = v2PartBase(v1, index)
         if (part.type === "text") {
           return [
             {
@@ -569,7 +571,7 @@ export function fromV1(v1: Message.Info): MessageWithParts {
                 if (part.toolInvocation.state === "call") {
                   return {
                     status: "running",
-                    input: part.toolInvocation.args,
+                    input: toolInput(part.toolInvocation.args),
                     time: {
                       start: time.start,
                     },
@@ -579,7 +581,7 @@ export function fromV1(v1: Message.Info): MessageWithParts {
                 if (part.toolInvocation.state === "result") {
                   return {
                     status: "completed",
-                    input: part.toolInvocation.args,
+                    input: toolInput(part.toolInvocation.args),
                     output: part.toolInvocation.result,
                     title,
                     time,
@@ -610,11 +612,7 @@ export function fromV1(v1: Message.Info): MessageWithParts {
         created: v1.metadata.time.created,
       },
       parts: v1.parts.flatMap((part, index): MessageV2.Part[] => {
-        const base = {
-          id: index.toString(),
-          messageID: v1.id,
-          sessionID: v1.metadata.sessionID,
-        }
+        const base = v2PartBase(v1, index)
         if (part.type === "text") {
           return [
             {
@@ -641,4 +639,17 @@ export function fromV1(v1: Message.Info): MessageWithParts {
   }
 
   throw new Error("unknown message type")
+}
+
+function v2PartBase(v1: Message.Info, index: number): Pick<MessageV2.Part, "id" | "messageID" | "sessionID"> {
+  return {
+    id: `prt_${index}` as MessageV2.Part["id"],
+    messageID: v1.id as MessageV2.Part["messageID"],
+    sessionID: v1.metadata.sessionID,
+  }
+}
+
+function toolInput(value: unknown): Record<string, unknown> {
+  if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, unknown>
+  return {}
 }

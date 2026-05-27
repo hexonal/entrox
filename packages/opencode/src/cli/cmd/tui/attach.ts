@@ -5,10 +5,11 @@ import { TuiConfig } from "@/cli/cmd/tui/config/tui"
 import { errorMessage } from "@/util/error"
 import { validateSession } from "./validate-session"
 import { ServerAuth } from "@/server/auth"
+import { Brand } from "@/brand"
 
 export const AttachCommand = cmd({
   command: "attach <url>",
-  describe: "attach to a running opencode server",
+  describe: `attach to a running ${Brand.command} server`,
   builder: (yargs) =>
     yargs
       .positional("url", {
@@ -37,12 +38,12 @@ export const AttachCommand = cmd({
       .option("password", {
         alias: ["p"],
         type: "string",
-        describe: "basic auth password (defaults to OPENCODE_SERVER_PASSWORD)",
+        describe: "basic auth password (defaults to ENTROX_SERVER_PASSWORD or OPENCODE_SERVER_PASSWORD)",
       })
       .option("username", {
         alias: ["u"],
         type: "string",
-        describe: "basic auth username (defaults to OPENCODE_SERVER_USERNAME or 'opencode')",
+        describe: `basic auth username (defaults to ENTROX_SERVER_USERNAME, OPENCODE_SERVER_USERNAME, or '${Brand.command}')`,
       }),
   handler: async (args) => {
     const unguard = win32InstallCtrlCGuard()

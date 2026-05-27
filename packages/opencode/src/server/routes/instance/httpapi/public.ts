@@ -1,6 +1,7 @@
 import { OpenApi } from "effect/unstable/httpapi"
 import { OpenCodeHttpApi } from "./api"
 import { QueryBooleanOpenApi } from "./groups/query"
+import { Brand } from "@/brand"
 
 type OpenApiParameter = {
   name: string
@@ -527,9 +528,9 @@ function normalizeParameter(param: OpenApiParameter, route: string) {
 
 export const PublicApi = OpenCodeHttpApi.annotateMerge(
   OpenApi.annotations({
-    title: "opencode",
+    title: Brand.command,
     version: "1.0.0",
-    description: "opencode api",
+    description: `${Brand.name} api`,
     transform: matchLegacyOpenApi,
   }),
 )

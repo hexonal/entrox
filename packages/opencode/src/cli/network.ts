@@ -1,6 +1,7 @@
 import type { Argv, InferredOptionTypes } from "yargs"
 import { Config } from "@/config/config"
 import { Effect } from "effect"
+import { Brand } from "@/brand"
 
 const options = {
   port: {
@@ -20,8 +21,8 @@ const options = {
   },
   "mdns-domain": {
     type: "string" as const,
-    describe: "custom domain name for mDNS service (default: opencode.local)",
-    default: "opencode.local",
+    describe: `custom domain name for mDNS service (default: ${Brand.mdnsDefault})`,
+    default: Brand.mdnsDefault,
   },
   cors: {
     type: "string" as const,

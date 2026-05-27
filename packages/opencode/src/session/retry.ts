@@ -3,6 +3,7 @@ import { Cause, Clock, Duration, Effect, Schedule } from "effect"
 import { MessageV2 } from "./message-v2"
 import { iife } from "@/util/iife"
 import { isRecord } from "@/util/record"
+import { Brand } from "@/brand"
 
 export type Err = ReturnType<NamedError["toObject"]>
 
@@ -79,7 +80,7 @@ export function retryable(error: Err, provider: string) {
           reason: "free_tier_limit",
           provider,
           title: "Free limit reached",
-          message: "Subscribe to OpenCode Go for reliable access to the best open-source models, starting at $5/month.",
+          message: `Subscribe to ${Brand.name} Go for reliable access to the best open-source models, starting at $5/month.`,
           label: "subscribe",
           link: GO_UPSELL_URL,
         },

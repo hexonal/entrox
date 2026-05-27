@@ -3,6 +3,7 @@ import { TuiThreadCommand } from "./cli/cmd/tui/thread"
 import { InstallationVersion } from "@opencode-ai/core/installation/version"
 import { hideBin } from "yargs/helpers"
 import { Log } from "./node"
+import { Brand } from "./brand"
 
 Log.init({
   print: false,
@@ -10,7 +11,7 @@ Log.init({
 
 const cli = yargs(hideBin(process.argv))
   .parserConfiguration({ "populate--": true })
-  .scriptName("opencode")
+  .scriptName(Brand.command)
   .wrap(100)
   .help("help", "show help")
   .alias("help", "h")

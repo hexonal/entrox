@@ -30,8 +30,9 @@ import { ACPNextSession } from "./session"
 import { ModelID, ProviderID } from "@/provider/schema"
 import { Provider } from "@/provider/provider"
 import type { Command } from "@/command"
+import { Brand } from "@/brand"
 
-export const AuthMethodID = "opencode-login"
+export const AuthMethodID = `${Brand.command}-login`
 
 export type Error = ACPNextError.Error
 
@@ -63,17 +64,17 @@ export function make(input: {
 
   const initialize = Effect.fn("ACPNext.initialize")(function* (params: InitializeRequest) {
     const authMethod: AuthMethod = {
-      description: "Run `opencode auth login` in the terminal",
-      name: "Login with opencode",
+      description: `Run \`${Brand.command} auth login\` in the terminal`,
+      name: `Login with ${Brand.command}`,
       id: AuthMethodID,
     }
 
     if (params.clientCapabilities?._meta?.["terminal-auth"] === true) {
       authMethod._meta = {
         "terminal-auth": {
-          command: "opencode",
+          command: Brand.command,
           args: ["auth", "login"],
-          label: "OpenCode Login",
+          label: `${Brand.name} Login`,
         },
       }
     }
@@ -93,7 +94,7 @@ export function make(input: {
       },
       authMethods: [authMethod],
       agentInfo: {
-        name: "OpenCode",
+        name: Brand.name,
         version: InstallationVersion,
       },
     }
@@ -615,7 +616,7 @@ function fromUnknownError(error: unknown, service?: string): Error {
   if (isAuthRequired(error)) {
     return new ACPNextError.AuthRequiredError({ providerId: findProviderID(error) })
   }
-  return new ACPNextError.ServiceFailureError({ safeMessage: "OpenCode service failure", service })
+  return new ACPNextError.ServiceFailureError({ safeMessage: `${Brand.name} service failure`, service })
 }
 
 function isACPNextError(error: unknown): error is Error {

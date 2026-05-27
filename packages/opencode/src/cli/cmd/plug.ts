@@ -11,6 +11,7 @@ import { Process } from "@/util/process"
 import { UI } from "../ui"
 import { effectCmd } from "../effect-cmd"
 import { InstanceRef } from "@/effect/instance-ref"
+import { Brand } from "@/brand"
 
 type Spin = {
   start: (msg: string) => void
@@ -28,7 +29,7 @@ export type PlugDeps = {
   readText: (file: string) => Promise<string>
   write: (file: string, text: string) => Promise<void>
   exists: (file: string) => Promise<boolean>
-  files: (dir: string, name: "opencode" | "tui") => string[]
+  files: (dir: string, name: typeof Brand.legacyConfigBase | "tui") => string[]
   global: string
 }
 

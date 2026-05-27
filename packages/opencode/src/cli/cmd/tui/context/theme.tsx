@@ -44,6 +44,7 @@ import { Filesystem } from "@/util/filesystem"
 import { useTuiConfig } from "./tui-config"
 import { isRecord } from "@/util/record"
 import type { TuiThemeCurrent } from "@opencode-ai/plugin/tui"
+import { Brand } from "@/brand"
 
 type Theme = TuiThemeCurrent & {
   _hasSelectedListItemText: boolean
@@ -490,7 +491,7 @@ async function getCustomThemes() {
     Global.Path.config,
     ...(await Array.fromAsync(
       Filesystem.up({
-        targets: [".opencode"],
+        targets: [Brand.projectDirectory, Brand.legacyProjectDirectory],
         start: process.cwd(),
       }),
     )),

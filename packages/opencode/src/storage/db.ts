@@ -14,6 +14,7 @@ import { InstallationChannel } from "@opencode-ai/core/installation/version"
 import { EffectBridge } from "@/effect/bridge"
 import { init } from "#db"
 import { Effect, Schema } from "effect"
+import { Brand } from "@/brand"
 
 declare const OPENCODE_MIGRATIONS: { sql: string; timestamp: number; name: string }[] | undefined
 
@@ -30,17 +31,25 @@ const readRuntimeFlags = () =>
 
 export function getChannelPath(flags: Pick<DatabaseFlags, "disableChannelDb"> = readRuntimeFlags()) {
   if (["latest", "beta", "prod"].includes(InstallationChannel) || flags.disableChannelDb)
-    return path.join(Global.Path.data, "opencode.db")
+    return compatiblePath(`${Brand.databaseBase}.db`, `${Brand.legacyDatabaseBase}.db`)
   const safe = InstallationChannel.replace(/[^a-zA-Z0-9._-]/g, "-")
-  return path.join(Global.Path.data, `opencode-${safe}.db`)
+  return compatiblePath(`${Brand.databaseBase}-${safe}.db`, `${Brand.legacyDatabaseBase}-${safe}.db`)
 }
 
 export const getPath = (flags?: Pick<DatabaseFlags, "disableChannelDb">) => {
-  if (Flag.OPENCODE_DB) {
-    if (Flag.OPENCODE_DB === ":memory:" || path.isAbsolute(Flag.OPENCODE_DB)) return Flag.OPENCODE_DB
-    return path.join(Global.Path.data, Flag.OPENCODE_DB)
+  const database = Flag.ENTROX_DB ?? Flag.OPENCODE_DB
+  if (database) {
+    if (database === ":memory:" || path.isAbsolute(database)) return database
+    return path.join(Global.Path.data, database)
   }
   return getChannelPath(flags)
+}
+
+function compatiblePath(name: string, legacyName: string) {
+  const next = path.join(Global.Path.data, name)
+  const legacy = path.join(Global.LegacyPath.data, legacyName)
+  if (!existsSync(next) && existsSync(legacy)) return legacy
+  return next
 }
 
 export type Transaction = SQLiteTransaction<"sync", void>

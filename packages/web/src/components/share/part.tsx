@@ -27,7 +27,7 @@ import { ContentBash } from "./content-bash"
 import { ContentError } from "./content-error"
 import { formatCount, formatDuration, formatNumber, normalizeLocale, useShareMessages } from "../share/common"
 import { ContentMarkdown } from "./content-markdown"
-import type { MessageV2 } from "opencode/session/message-v2"
+import type { MessageV2 } from "entrox/session/message-v2"
 import type { Diagnostic } from "vscode-languageserver-types"
 
 import styles from "./part.module.css"
@@ -39,6 +39,10 @@ export interface PartProps {
   message: MessageV2.Info
   part: MessageV2.Part
   last: boolean
+}
+
+function isAssistant(message: MessageV2.Info): message is MessageV2.Assistant {
+  return message.role === "assistant"
 }
 
 export function Part(props: PartProps) {
@@ -80,7 +84,7 @@ export function Part(props: PartProps) {
                 <IconPaperClip width={18} height={18} />
               </Match>
               <Match
-                when={props.part.type === "step-start" && props.message.role === "assistant" && props.message.modelID}
+                when={props.part.type === "step-start" && isAssistant(props.message) && props.message.modelID}
               >
                 {(model) => <ProviderIcon model={model()} size={18} />}
               </Match>
@@ -139,7 +143,7 @@ export function Part(props: PartProps) {
             <div data-component="assistant-text-markdown">
               <ContentMarkdown expand={props.last} text={props.part.text} />
             </div>
-            {props.last && props.message.role === "assistant" && props.message.time.completed && (
+            {props.last && isAssistant(props.message) && props.message.time.completed && (
               <Footer
                 title={DateTime.fromMillis(props.message.time.completed)
                   .setLocale(normalizeLocale(messages.locale))
@@ -174,7 +178,7 @@ export function Part(props: PartProps) {
             <div data-slot="filename">{props.part.filename}</div>
           </div>
         )}
-        {props.part.type === "step-start" && props.message.role === "assistant" && (
+        {props.part.type === "step-start" && isAssistant(props.message) && (
           <div data-component="step-start">
             <div data-slot="provider">{props.message.providerID}</div>
             <div data-slot="model">{props.message.modelID}</div>
