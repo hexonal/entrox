@@ -1149,7 +1149,7 @@ export function fromModelsDevProvider(provider: ModelsDev.Provider): Info {
   return {
     id: ProviderID.make(provider.id),
     source: "custom",
-    name: provider.name,
+    name: provider.id === "opencode" ? "Entrox" : provider.name,
     env: [...(provider.env ?? [])],
     options: {},
     models,

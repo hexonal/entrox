@@ -64,7 +64,7 @@ export const ModelsDevPlugin = PluginV2.define({
         for (const item of Object.values(data)) {
           const providerID = ProviderV2.ID.make(item.id)
           catalog.provider.update(providerID, (provider) => {
-            provider.name = item.name
+            provider.name = item.id === ProviderV2.ID.opencode ? "Entrox" : item.name
             provider.env = [...item.env]
             provider.endpoint = item.npm
               ? {
