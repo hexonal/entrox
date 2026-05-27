@@ -1,5 +1,6 @@
 export const Brand = {
   name: "entrox",
+  product: "Entrox",
   command: "entrox",
   display: "entrox CLI",
   short: "EX",

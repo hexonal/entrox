@@ -477,9 +477,9 @@ describe("session.llm-native.request", () => {
           ...providerInfo,
           id: ProviderID.make("opencode"),
           options: { apiKey: "console-token" },
-          key: "zen-token",
+          key: "entrox-token",
         },
-        auth: { type: "api", key: "zen-token" },
+        auth: { type: "api", key: "entrox-token" },
       }),
     ).toMatchObject({
       type: "supported",

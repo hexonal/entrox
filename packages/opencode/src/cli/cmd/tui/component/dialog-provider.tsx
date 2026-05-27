@@ -358,12 +358,12 @@ function ApiMethod(props: ApiMethodProps) {
         {
           opencode: (
             <text fg={theme.textMuted}>
-              {Brand.name} gives you access to supported coding models with a single API key.
+              {Brand.product} gives you access to supported coding models with a single API key.
             </text>
           ),
           "opencode-go": (
             <text fg={theme.textMuted}>
-              {Brand.name} Go provides reliable access to popular open coding models with generous usage limits.
+              {Brand.product} Go provides reliable access to popular open coding models with generous usage limits.
             </text>
           ),
         }[props.providerID] ?? undefined
