@@ -19,6 +19,12 @@ import { Effect, Option } from "effect"
 import { Brand } from "@/brand"
 
 type PluginAuth = NonNullable<Hooks["auth"]>
+type WellKnownMetadata = {
+  auth: {
+    command: string[]
+    env: string
+  }
+}
 
 const promptValue = <Value>(value: Option.Option<Value>) => {
   if (Option.isNone(value)) return Effect.die(new UI.CancelledError())
@@ -35,6 +41,36 @@ const cliTry = <Value>(message: string, fn: () => PromiseLike<Value>) =>
     try: fn,
     catch: (error) => new CliError({ message: message + errorMessage(error) }),
   })
+
+const wellKnownLogin = Effect.fn("Cli.providers.wellKnownLogin")(function* (input?: { url?: string }) {
+  const authSvc = yield* Auth.Service
+  const url = (input?.url ?? Brand.authProviderURL).replace(/\/+$/, "")
+  const wellknown = (yield* cliTry(`Failed to load auth provider metadata from ${url}: `, () =>
+    fetch(`${url}/.well-known/opencode`).then((x) => {
+      if (!x.ok) throw new Error(`HTTP ${x.status}`)
+      return x.json()
+    }),
+  )) as WellKnownMetadata
+  yield* Prompt.log.info(`Running \`${wellknown.auth.command.join(" ")}\``)
+  const abort = new AbortController()
+  const proc = Process.spawn(wellknown.auth.command, { stdout: "pipe", stderr: "inherit", abort: abort.signal })
+  if (!proc.stdout) {
+    yield* Prompt.log.error("Failed")
+    yield* Prompt.outro("Done")
+    return
+  }
+  const [exit, token] = yield* cliTry("Failed to run auth provider command: ", () =>
+    Promise.all([proc.exited, text(proc.stdout!)]),
+  ).pipe(Effect.ensuring(Effect.sync(() => abort.abort())))
+  if (exit !== 0) {
+    yield* Prompt.log.error("Failed")
+    yield* Prompt.outro("Done")
+    return
+  }
+  yield* Effect.orDie(authSvc.set(url, { type: "wellknown", key: wellknown.auth.env, token: token.trim() }))
+  yield* Prompt.log.success("Logged into " + url)
+  yield* Prompt.outro("Done")
+})
 
 const handlePluginAuth = Effect.fn("Cli.providers.pluginAuth")(function* (
   plugin: { auth: PluginAuth },
@@ -245,6 +281,17 @@ export const ProvidersCommand = cmd({
   async handler() {},
 })
 
+export const LoginCommand = effectCmd({
+  command: "login",
+  describe: `log in to ${Brand.product}`,
+  instance: false,
+  handler: Effect.fn("Cli.login")(function* () {
+    UI.empty()
+    yield* Prompt.intro(`${Brand.product} login`)
+    yield* wellKnownLogin()
+  }),
+})
+
 export const ProvidersListCommand = effectCmd({
   command: "list",
   aliases: ["ls"],
@@ -316,39 +363,18 @@ export const ProvidersLoginCommand = effectCmd({
         type: "string",
       }),
   handler: Effect.fn("Cli.providers.login")(function* (args) {
-    const authSvc = yield* Auth.Service
-
     UI.empty()
     yield* Prompt.intro("Add credential")
     if (args.url) {
-      const url = args.url.replace(/\/+$/, "")
-      const wellknown = (yield* cliTry(`Failed to load auth provider metadata from ${url}: `, () =>
-        fetch(`${url}/.well-known/opencode`).then((x) => x.json()),
-      )) as {
-        auth: { command: string[]; env: string }
-      }
-      yield* Prompt.log.info(`Running \`${wellknown.auth.command.join(" ")}\``)
-      const abort = new AbortController()
-      const proc = Process.spawn(wellknown.auth.command, { stdout: "pipe", stderr: "inherit", abort: abort.signal })
-      if (!proc.stdout) {
-        yield* Prompt.log.error("Failed")
-        yield* Prompt.outro("Done")
-        return
-      }
-      const [exit, token] = yield* cliTry("Failed to run auth provider command: ", () =>
-        Promise.all([proc.exited, text(proc.stdout!)]),
-      ).pipe(Effect.ensuring(Effect.sync(() => abort.abort())))
-      if (exit !== 0) {
-        yield* Prompt.log.error("Failed")
-        yield* Prompt.outro("Done")
-        return
-      }
-      yield* Effect.orDie(authSvc.set(url, { type: "wellknown", key: wellknown.auth.env, token: token.trim() }))
-      yield* Prompt.log.success("Logged into " + url)
-      yield* Prompt.outro("Done")
+      yield* wellKnownLogin({ url: args.url })
+      return
+    }
+    if (!args.provider && !args.method) {
+      yield* wellKnownLogin()
       return
     }
 
+    const authSvc = yield* Auth.Service
     const cfgSvc = yield* Config.Service
     const pluginSvc = yield* Plugin.Service
     const modelsDev = yield* ModelsDev.Service

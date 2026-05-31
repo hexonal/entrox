@@ -300,7 +300,7 @@ export function Prompt(props: PromptProps) {
   function promptModelWarning() {
     toast.show({
       variant: "warning",
-      message: "Connect a provider to send prompts",
+      message: "Connect Entrox to send prompts",
       duration: 3000,
     })
     if (sync.data.provider.length === 0) {

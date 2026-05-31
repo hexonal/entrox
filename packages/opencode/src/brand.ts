@@ -13,6 +13,7 @@ export const Brand = {
   mdnsDefault: "entrox.local",
   userAgentProduct: "entrox",
   defaultSoundPack: "entrox.default",
+  authProviderURL: "https://entrox.996icu.wiki",
   legacyCommand: "opencode",
   legacyPackageName: "opencode",
   legacyNpmPackageName: "opencode-ai",

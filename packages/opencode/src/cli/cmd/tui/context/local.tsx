@@ -225,7 +225,7 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
           const value = currentModel()
           if (!value) {
             return {
-              provider: "Connect a provider",
+              provider: "Connect Entrox",
               model: "No provider selected",
               reasoning: false,
             }

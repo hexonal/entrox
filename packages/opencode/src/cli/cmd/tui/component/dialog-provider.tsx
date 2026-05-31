@@ -1,6 +1,6 @@
 import { createMemo, createSignal, onMount, Show } from "solid-js"
 import { useSync } from "@tui/context/sync"
-import { map, pipe, sortBy } from "remeda"
+import { map, pipe } from "remeda"
 import { DialogSelect } from "@tui/ui/dialog-select"
 import { useDialog } from "@tui/ui/dialog"
 import { useSDK } from "../context/sdk"
@@ -12,22 +12,22 @@ import type { ProviderAuthAuthorization, ProviderAuthMethod } from "@opencode-ai
 import { DialogModel } from "./dialog-model"
 import * as Clipboard from "@tui/util/clipboard"
 import { useToast } from "../ui/toast"
+import { Spinner } from "../component/spinner"
 import { isConsoleManagedProvider } from "@tui/util/provider-origin"
 import { useConnected } from "./use-connected"
 import { useBindings } from "../keymap"
 import { Brand } from "@/brand"
+import { Process } from "@/util/process"
+import { errorMessage } from "@/util/error"
 
-const PROVIDER_PRIORITY: Record<string, number> = {
-  opencode: 0,
-  "opencode-go": 1,
-  openai: 2,
-  "github-copilot": 3,
-  anthropic: 4,
-  google: 5,
+const WELL_KNOWN_PROVIDER_OPTION_VALUE = "__entrox_wellknown_provider__"
+
+type WellKnownMetadata = {
+  auth: {
+    command: string[]
+    env: string
+  }
 }
-
-const CUSTOM_PROVIDER_OPTION_VALUE = "__opencode_custom_provider__"
-const CUSTOM_PROVIDER_ID = /^[a-z0-9][a-z0-9-_]*$/
 
 type ProviderOptionBase = {
   title: string
@@ -42,42 +42,19 @@ type ProviderOption =
       providerID: string
     })
   | (ProviderOptionBase & {
-      type: "custom"
+      type: "well-known"
     })
 
-export function providerOptions(list: { id: string; name: string }[]): ProviderOption[] {
+export function providerOptions(_list: { id: string; name: string }[]): ProviderOption[] {
   return [
-    ...pipe(
-      list,
-      sortBy((x) => PROVIDER_PRIORITY[x.id] ?? 99),
-      map((provider) => ({
-        type: "provider" as const,
-        title: provider.name,
-        value: provider.id,
-        providerID: provider.id,
-        description: {
-          opencode: "(Recommended)",
-          anthropic: "(API key)",
-          openai: "(ChatGPT Plus/Pro or API key)",
-          "opencode-go": "Low cost subscription for everyone",
-        }[provider.id],
-        category: provider.id in PROVIDER_PRIORITY ? "Popular" : "Providers",
-      })),
-    ),
     {
-      type: "custom",
-      title: "Other",
-      value: CUSTOM_PROVIDER_OPTION_VALUE,
-      description: "Custom provider",
-      category: "Providers",
+      type: "well-known",
+      title: Brand.product,
+      value: WELL_KNOWN_PROVIDER_OPTION_VALUE,
+      description: "Browser login",
+      category: "Provider",
     },
   ]
-}
-
-export function normalizeCustomProviderID(value: string) {
-  const providerID = value.trim().replace(/^@ai-sdk\//, "")
-  if (!CUSTOM_PROVIDER_ID.test(providerID)) return
-  return providerID
 }
 
 export function createDialogProviderOptions() {
@@ -88,42 +65,22 @@ export function createDialogProviderOptions() {
   const { theme } = useTheme()
   const onboarded = useConnected()
 
-  async function promptCustomProviderID(): Promise<string | undefined> {
-    const value = await DialogPrompt.show(dialog, "Other", {
-      placeholder: "Provider id",
-      description: () => (
-        <text fg={theme.textMuted}>
-          This only stores a credential. Configure the provider in {Brand.configBase}.json to use it.
-        </text>
-      ),
-    })
-    if (value === null) return
-
-    const providerID = normalizeCustomProviderID(value)
-    if (providerID) return providerID
-
-    toast.show({
-      variant: "error",
-      message:
-        "Provider ids must start with a lowercase letter or number and only use lowercase letters, numbers, hyphens, and underscores",
-    })
-    return promptCustomProviderID()
+  function promptWellKnownProviderURL() {
+    dialog.replace(() => <WellKnownMethod url={Brand.authProviderURL} />)
   }
 
   const options = createMemo(() => {
     return pipe(
       providerOptions(sync.data.provider_next.all),
       map((provider) => {
-        if (provider.type === "custom") {
+        if (provider.type === "well-known") {
           return {
             title: provider.title,
             value: provider.value,
             description: provider.description,
             category: provider.category,
             async onSelect() {
-              const providerID = await promptCustomProviderID()
-              if (!providerID) return
-              return dialog.replace(() => <ApiMethod providerID={providerID} title="API key" custom />)
+              promptWellKnownProviderURL()
             },
           }
         }
@@ -224,7 +181,101 @@ export function createDialogProviderOptions() {
 
 export function DialogProvider() {
   const options = createDialogProviderOptions()
-  return <DialogSelect title="Connect a provider" options={options()} />
+  return <DialogSelect title="Connect Entrox" options={options()} />
+}
+
+export function normalizeWellKnownProviderURL(value: string) {
+  const trimmed = value.trim().replace(/\/+$/, "")
+  if (!trimmed) return
+
+  try {
+    const url = new URL(trimmed)
+    if (!["http:", "https:"].includes(url.protocol)) return
+    url.pathname = url.pathname.replace(/\/+$/, "")
+    return url.toString().replace(/\/+$/, "")
+  } catch {
+    return
+  }
+}
+
+function isWellKnownMetadata(value: unknown): value is WellKnownMetadata {
+  if (!value || typeof value !== "object") return false
+  if (!("auth" in value) || !value.auth || typeof value.auth !== "object") return false
+  const auth = value.auth as Record<string, unknown>
+  return (
+    Array.isArray(auth.command) &&
+    auth.command.every((item) => typeof item === "string") &&
+    typeof auth.env === "string"
+  )
+}
+
+function WellKnownMethod(props: { url: string }) {
+  const dialog = useDialog()
+  const sdk = useSDK()
+  const sync = useSync()
+  const toast = useToast()
+  const { theme } = useTheme()
+
+  async function login() {
+    const url = normalizeWellKnownProviderURL(props.url)
+    if (!url) {
+      toast.show({ variant: "error", message: "Enter a valid http or https provider URL" })
+      dialog.clear()
+      return
+    }
+
+    try {
+      const response = await fetch(`${url}/.well-known/opencode`)
+      if (!response.ok) throw new Error(`Metadata request failed with HTTP ${response.status}`)
+      const metadata: unknown = await response.json()
+      if (!isWellKnownMetadata(metadata)) throw new Error("Metadata response is missing auth.command or auth.env")
+
+      toast.show({ variant: "info", message: `Running ${metadata.auth.command.join(" ")}` })
+      const result = await Process.text(metadata.auth.command)
+      const token = result.text.trim()
+      if (!token) throw new Error("Authorization command did not return a token")
+
+      const saved = await sdk.fetch(new URL(`/auth/${encodeURIComponent(url)}`, sdk.url), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "wellknown",
+          key: metadata.auth.env,
+          token,
+        }),
+      })
+      if (!saved.ok) {
+        const message = await saved.text().catch(() => "")
+        throw new Error(message || `Failed to save credential with HTTP ${saved.status}`)
+      }
+
+      await sdk.client.instance.dispose()
+      await sync.bootstrap()
+      toast.show({ variant: "success", message: `Logged into ${url}` })
+      dialog.replace(() => <DialogModel />)
+    } catch (error) {
+      toast.show({ variant: "error", message: errorMessage(error) })
+      dialog.clear()
+    }
+  }
+
+  onMount(() => {
+    void login()
+  })
+
+  return (
+    <box paddingLeft={2} paddingRight={2} gap={1} paddingBottom={1}>
+      <box flexDirection="row" justifyContent="space-between">
+        <text attributes={TextAttributes.BOLD} fg={theme.text}>
+          {Brand.product} login
+        </text>
+        <text fg={theme.textMuted} onMouseUp={() => dialog.clear()}>
+          esc
+        </text>
+      </box>
+      <Spinner color={theme.textMuted}>Waiting for browser authorization...</Spinner>
+    </box>
+  )
 }
 
 interface AutoMethodProps {

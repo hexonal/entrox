@@ -50,12 +50,10 @@ function View(props: { api: TuiPluginApi }) {
                 ✕
               </text>
             </box>
-            <text fg={theme().textMuted}>{Brand.name} includes free models so you can start immediately.</text>
-            <text fg={theme().textMuted}>
-              Connect from 75+ providers to use other models, including Claude, GPT, Gemini etc
-            </text>
+            <text fg={theme().textMuted}>{Brand.name} uses your Entrox account for model access.</text>
+            <text fg={theme().textMuted}>Sign in once to load the models enabled for your account.</text>
             <box flexDirection="row" gap={1} justifyContent="space-between">
-              <text fg={theme().text}>Connect provider</text>
+              <text fg={theme().text}>Connect Entrox</text>
               <text fg={theme().textMuted}>/connect</text>
             </box>
           </box>

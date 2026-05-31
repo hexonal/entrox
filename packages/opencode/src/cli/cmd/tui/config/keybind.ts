@@ -111,7 +111,7 @@ export const Definitions = {
   session_quick_switch_9: keybind("<leader>9", "Switch to session in quick slot 9"),
 
   stash_delete: keybind("ctrl+d", "Delete stash entry"),
-  model_provider_list: keybind("ctrl+a", "Open provider list from model dialog"),
+  model_provider_list: keybind("ctrl+a", "Open Entrox login from model dialog"),
   model_favorite_toggle: keybind("ctrl+f", "Toggle model favorite status"),
   model_list: keybind("<leader>m", "List available models"),
   model_cycle_recent: keybind("f2", "Next recently used model"),
@@ -119,7 +119,7 @@ export const Definitions = {
   model_cycle_favorite: keybind("none", "Next favorite model"),
   model_cycle_favorite_reverse: keybind("none", "Previous favorite model"),
   mcp_list: keybind("none", "List MCP servers"),
-  provider_connect: keybind("none", "Connect provider"),
+  provider_connect: keybind("none", "Connect Entrox"),
   console_org_switch: keybind("none", "Switch console organization"),
   agent_list: keybind("<leader>a", "List agents"),
   agent_cycle: keybind("tab", "Next agent"),

@@ -8,6 +8,7 @@ import { createDialogProviderOptions, DialogProvider } from "./dialog-provider"
 import { DialogVariant } from "./dialog-variant"
 import * as fuzzysort from "fuzzysort"
 import { useConnected } from "./use-connected"
+import { Brand } from "@/brand"
 
 export function DialogModel(props: { providerID?: string }) {
   const local = useLocal()
@@ -102,7 +103,7 @@ export function DialogModel(props: { providerID?: string }) {
           providers(),
           map((option) => ({
             ...option,
-            category: "Popular providers",
+            category: "Login",
           })),
           take(6),
         )
@@ -149,7 +150,7 @@ export function DialogModel(props: { providerID?: string }) {
       actions={[
         {
           command: "model.dialog.provider",
-          title: connected() ? "Connect provider" : "View all providers",
+          title: `Connect ${Brand.product}`,
           onTrigger() {
             dialog.replace(() => <DialogProvider />)
           },

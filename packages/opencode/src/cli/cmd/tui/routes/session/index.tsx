@@ -557,7 +557,7 @@ export function Session() {
         if (!selectedModel) {
           toast.show({
             variant: "warning",
-            message: "Connect a provider to summarize this session",
+            message: "Connect Entrox to summarize this session",
             duration: 3000,
           })
           return

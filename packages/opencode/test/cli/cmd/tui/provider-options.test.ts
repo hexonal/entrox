@@ -1,29 +1,43 @@
 import { describe, expect, test } from "bun:test"
-import { normalizeCustomProviderID, providerOptions } from "../../../../src/cli/cmd/tui/component/dialog-provider"
+import {
+  normalizeWellKnownProviderURL,
+  providerOptions,
+} from "../../../../src/cli/cmd/tui/component/dialog-provider"
 
 describe("providerOptions", () => {
-  test("includes a synthetic Other option for custom providers", () => {
-    expect(providerOptions([{ id: "openai", name: "OpenAI" }]).at(-1)).toMatchObject({
-      title: "Other",
-      description: "Custom provider",
-      category: "Providers",
-    })
+  test("only exposes Entrox browser login", () => {
+    expect(
+      providerOptions([
+        { id: "openai", name: "OpenAI" },
+        { id: "anthropic", name: "Anthropic" },
+        { id: "github-copilot", name: "GitHub Copilot" },
+      ]),
+    ).toMatchObject([
+      {
+        title: "Entrox",
+        description: "Browser login",
+        category: "Provider",
+      },
+    ])
   })
 
-  test("does not use Other as the generic provider category", () => {
-    expect(providerOptions([{ id: "mistral", name: "Mistral" }])[0]?.category).toBe("Providers")
+  test("does not expose upstream provider names", () => {
+    const names = providerOptions([{ id: "openai", name: "OpenAI" }]).map((option) => option.title)
+    expect(names).not.toContain("OpenAI")
   })
 
-  test("does not collide with a configured provider named other", () => {
-    const values = providerOptions([{ id: "other", name: "Other Provider" }]).map((option) => option.value)
-    expect(new Set(values).size).toBe(values.length)
+  test("does not expose custom provider option", () => {
+    const options = providerOptions([{ id: "other", name: "Other Provider" }])
+    expect(options).toHaveLength(1)
+    expect(options.map((option) => option.title)).not.toContain("Other")
+    expect(options.map((option) => option.description)).not.toContain("Custom provider")
   })
 
-  test("normalizes and validates custom provider ids", () => {
-    expect(normalizeCustomProviderID("  custom-provider  ")).toBe("custom-provider")
-    expect(normalizeCustomProviderID("custom_provider")).toBe("custom_provider")
-    expect(normalizeCustomProviderID("@ai-sdk/custom-provider")).toBe("custom-provider")
-    expect(normalizeCustomProviderID("-custom-provider")).toBeUndefined()
-    expect(normalizeCustomProviderID("Custom Provider")).toBeUndefined()
+  test("normalizes and validates well-known provider urls", () => {
+    expect(normalizeWellKnownProviderURL("https://entrox.996icu.wiki/")).toBe("https://entrox.996icu.wiki")
+    expect(normalizeWellKnownProviderURL(" https://sub.example.com/ ")).toBe("https://sub.example.com")
+    expect(normalizeWellKnownProviderURL("http://localhost:3000/")).toBe("http://localhost:3000")
+    expect(normalizeWellKnownProviderURL("ftp://sub.example.com")).toBeUndefined()
+    expect(normalizeWellKnownProviderURL("sub.example.com")).toBeUndefined()
   })
 })

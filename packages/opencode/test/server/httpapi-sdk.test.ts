@@ -26,6 +26,7 @@ import { testProviderConfig } from "../lib/test-provider"
 import { ProviderV2 } from "@opencode-ai/core/provider"
 import { Database } from "@opencode-ai/core/database/database"
 import { httpApiLayer } from "./httpapi-layer"
+import { Global } from "@opencode-ai/core/global"
 
 const noopBootstrap = Layer.succeed(InstanceBootstrap.Service, InstanceBootstrap.Service.of({ run: Effect.void }))
 const it = testEffect(
@@ -125,6 +126,13 @@ function expectStatus(request: () => Promise<{ response: Response }>, status: nu
     Effect.tap((result) => Effect.sync(() => expect(result.response.status).toBe(status))),
     Effect.asVoid,
   )
+}
+
+function requestRaw(serverPath: ServerPath, url: string, init?: RequestInit) {
+  return Effect.gen(function* () {
+    const fetch = yield* serverFetch(serverPath)
+    return yield* Effect.promise(() => fetch(url, init))
+  })
 }
 
 function firstEvent(open: (signal: AbortSignal) => Promise<{ stream: AsyncIterator<unknown> }>) {
@@ -338,6 +346,29 @@ describe("HttpApi SDK", () => {
       expect(log.response.status).toBe(200)
       expect(log.data).toBe(true)
       yield* expectStatus(() => sdk.auth.set({ providerID: "test" }), 400)
+    }),
+  )
+
+  httpapi(
+    "stores URL provider ids through the raw auth route",
+    Effect.gen(function* () {
+      const provider = "https://entrox.996icu.wiki"
+      const response = yield* requestRaw("raw", `http://localhost/auth/${encodeURIComponent(provider)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "wellknown", key: "SUB2API_API_KEY", token: "test-token" }),
+      })
+      const body = yield* Effect.promise(() => response.json())
+
+      expect(response.status).toBe(200)
+      expect(body).toBe(true)
+
+      const auth = yield* Effect.promise(() => Bun.file(path.join(Global.Path.data, "auth.json")).json())
+      expect(auth[provider]).toMatchObject({
+        type: "wellknown",
+        key: "SUB2API_API_KEY",
+        token: "test-token",
+      })
     }),
   )
 
