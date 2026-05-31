@@ -1,7 +1,7 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode acp --help 1`] = `
-"entrox acp
+"opencode acp
 
 start ACP (Agent Client Protocol) server
 
@@ -15,23 +15,23 @@ Options:
       --hostname     hostname to listen on                           [string] [default: "127.0.0.1"]
       --mdns         enable mDNS service discovery (defaults hostname to 0.0.0.0)
                                                                           [boolean] [default: false]
-      --mdns-domain  custom domain name for mDNS service (default: entrox.local)
-                                                                  [string] [default: "entrox.local"]
+      --mdns-domain  custom domain name for mDNS service (default: opencode.local)
+                                                                [string] [default: "opencode.local"]
       --cors         additional domains to allow for CORS                      [array] [default: []]
       --cwd          working directory [string] [default: "<HOME>"]"
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode mcp --help 1`] = `
-"entrox mcp
+"opencode mcp
 
 manage MCP (Model Context Protocol) servers
 
 Commands:
-  entrox mcp add            add an MCP server
-  entrox mcp list           list MCP servers and their status                          [aliases: ls]
-  entrox mcp auth [name]    authenticate with an OAuth-enabled MCP server
-  entrox mcp logout [name]  remove OAuth credentials for an MCP server
-  entrox mcp debug <name>   debug OAuth connection for an MCP server
+  opencode mcp add            add an MCP server
+  opencode mcp list           list MCP servers and their status                        [aliases: ls]
+  opencode mcp auth [name]    authenticate with an OAuth-enabled MCP server
+  opencode mcp logout [name]  remove OAuth credentials for an MCP server
+  opencode mcp debug <name>   debug OAuth connection for an MCP server
 
 Options:
   -h, --help        show help                                                              [boolean]
@@ -42,9 +42,9 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode attach --help 1`] = `
-"entrox attach <url>
+"opencode attach <url>
 
-attach to a running entrox server
+attach to a running opencode server
 
 Positionals:
   url  http://localhost:4096                                                     [string] [required]
@@ -59,16 +59,14 @@ Options:
   -c, --continue    continue the last session                                              [boolean]
   -s, --session     session id to continue                                                  [string]
       --fork        fork the session when continuing (use with --continue or --session)    [boolean]
-  -p, --password    basic auth password (defaults to ENTROX_SERVER_PASSWORD or
-                    OPENCODE_SERVER_PASSWORD)                                               [string]
-  -u, --username    basic auth username (defaults to ENTROX_SERVER_USERNAME,
-                    OPENCODE_SERVER_USERNAME, or 'entrox')                                  [string]"
+  -p, --password    basic auth password (defaults to OPENCODE_SERVER_PASSWORD)              [string]
+  -u, --username    basic auth username (defaults to OPENCODE_SERVER_USERNAME or 'opencode')[string]"
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode run --help 1`] = `
-"entrox run [message..]
+"opencode run [message..]
 
-run entrox CLI with a message
+run opencode with a message
 
 Positionals:
   message  message to send                                                     [array] [default: []]
@@ -92,12 +90,12 @@ Options:
   -f, --file                          file(s) to attach to message                           [array]
       --title                         title for the session (uses truncated prompt if no value
                                       provided)                                             [string]
-      --attach                        attach to a running entrox CLI server (e.g.,
+      --attach                        attach to a running opencode server (e.g.,
                                       http://localhost:4096)                                [string]
-  -p, --password                      basic auth password (defaults to ENTROX_SERVER_PASSWORD or
-                                      OPENCODE_SERVER_PASSWORD)                             [string]
-  -u, --username                      basic auth username (defaults to ENTROX_SERVER_USERNAME,
-                                      OPENCODE_SERVER_USERNAME, or 'entrox')                [string]
+  -p, --password                      basic auth password (defaults to OPENCODE_SERVER_PASSWORD)
+                                                                                            [string]
+  -u, --username                      basic auth username (defaults to OPENCODE_SERVER_USERNAME or
+                                      'opencode')                                           [string]
       --dir                           directory to run in, path on remote server if attaching
                                                                                             [string]
       --port                          port for the local server (defaults to random port if no value
@@ -118,24 +116,24 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode debug --help 1`] = `
-"entrox debug
+"opencode debug
 
 debugging and troubleshooting tools
 
 Commands:
-  entrox debug config        show resolved configuration
-  entrox debug lsp           LSP debugging utilities
-  entrox debug rg            ripgrep debugging utilities
-  entrox debug file          file system debugging utilities
-  entrox debug scrap         list all known projects
-  entrox debug skill         list all available skills
-  entrox debug snapshot      snapshot debugging utilities
-  entrox debug startup       print startup timing
-  entrox debug agent <name>  show agent configuration details
-  entrox debug v2            debug v2 catalog and built-in plugins
-  entrox debug info          show debug information
-  entrox debug paths         show global paths (data, config, cache, state)
-  entrox debug wait          wait indefinitely (for debugging)
+  opencode debug config        show resolved configuration
+  opencode debug lsp           LSP debugging utilities
+  opencode debug rg            ripgrep debugging utilities
+  opencode debug file          file system debugging utilities
+  opencode debug scrap         list all known projects
+  opencode debug skill         list all available skills
+  opencode debug snapshot      snapshot debugging utilities
+  opencode debug startup       print startup timing
+  opencode debug agent <name>  show agent configuration details
+  opencode debug v2            debug v2 catalog and built-in plugins
+  opencode debug info          show debug information
+  opencode debug paths         show global paths (data, config, cache, state)
+  opencode debug wait          wait indefinitely (for debugging)
 
 Options:
   -h, --help        show help                                                              [boolean]
@@ -146,14 +144,14 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode providers --help 1`] = `
-"entrox providers
+"opencode providers
 
 manage AI providers and credentials
 
 Commands:
-  entrox providers list         list providers and credentials                         [aliases: ls]
-  entrox providers login [url]  log in to a provider
-  entrox providers logout       log out from a configured provider
+  opencode providers list         list providers and credentials                       [aliases: ls]
+  opencode providers login [url]  log in to a provider
+  opencode providers logout       log out from a configured provider
 
 Options:
   -h, --help        show help                                                              [boolean]
@@ -164,13 +162,13 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode agent --help 1`] = `
-"entrox agent
+"opencode agent
 
 manage agents
 
 Commands:
-  entrox agent create  create a new agent
-  entrox agent list    list all available agents
+  opencode agent create  create a new agent
+  opencode agent list    list all available agents
 
 Options:
   -h, --help        show help                                                              [boolean]
@@ -181,9 +179,9 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode upgrade --help 1`] = `
-"entrox upgrade [target]
+"opencode upgrade [target]
 
-upgrade entrox CLI to the latest or a specific version
+upgrade opencode to the latest or a specific version
 
 Positionals:
   target  version to upgrade to, for ex '0.1.48' or 'v0.1.48'                               [string]
@@ -199,9 +197,9 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode uninstall --help 1`] = `
-"entrox uninstall
+"opencode uninstall
 
-uninstall entrox CLI and remove all related files
+uninstall opencode and remove all related files
 
 Options:
   -h, --help         show help                                                             [boolean]
@@ -216,9 +214,9 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode serve --help 1`] = `
-"entrox serve
+"opencode serve
 
-starts a headless entrox CLI server
+starts a headless opencode server
 
 Options:
   -h, --help         show help                                                             [boolean]
@@ -230,15 +228,15 @@ Options:
       --hostname     hostname to listen on                           [string] [default: "127.0.0.1"]
       --mdns         enable mDNS service discovery (defaults hostname to 0.0.0.0)
                                                                           [boolean] [default: false]
-      --mdns-domain  custom domain name for mDNS service (default: entrox.local)
-                                                                  [string] [default: "entrox.local"]
+      --mdns-domain  custom domain name for mDNS service (default: opencode.local)
+                                                                [string] [default: "opencode.local"]
       --cors         additional domains to allow for CORS                      [array] [default: []]"
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode web --help 1`] = `
-"entrox web
+"opencode web
 
-start entrox CLI server and open web interface
+start opencode server and open web interface
 
 Options:
   -h, --help         show help                                                             [boolean]
@@ -250,13 +248,13 @@ Options:
       --hostname     hostname to listen on                           [string] [default: "127.0.0.1"]
       --mdns         enable mDNS service discovery (defaults hostname to 0.0.0.0)
                                                                           [boolean] [default: false]
-      --mdns-domain  custom domain name for mDNS service (default: entrox.local)
-                                                                  [string] [default: "entrox.local"]
+      --mdns-domain  custom domain name for mDNS service (default: opencode.local)
+                                                                [string] [default: "opencode.local"]
       --cors         additional domains to allow for CORS                      [array] [default: []]"
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode models --help 1`] = `
-"entrox models [provider]
+"opencode models [provider]
 
 list all available models
 
@@ -274,7 +272,7 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode stats --help 1`] = `
-"entrox stats
+"opencode stats
 
 show token usage and cost statistics
 
@@ -292,7 +290,7 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode export --help 1`] = `
-"entrox export [sessionID]
+"opencode export [sessionID]
 
 export session data as JSON
 
@@ -309,7 +307,7 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode import --help 1`] = `
-"entrox import <file>
+"opencode import <file>
 
 import session data from JSON file or URL
 
@@ -325,13 +323,13 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode github --help 1`] = `
-"entrox github
+"opencode github
 
 manage GitHub agent
 
 Commands:
-  entrox github install  install the GitHub agent
-  entrox github run      run the GitHub agent
+  opencode github install  install the GitHub agent
+  opencode github run      run the GitHub agent
 
 Options:
   -h, --help        show help                                                              [boolean]
@@ -342,9 +340,9 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode pr --help 1`] = `
-"entrox pr <number>
+"opencode pr <number>
 
-fetch and checkout a GitHub PR branch, then run entrox
+fetch and checkout a GitHub PR branch, then run opencode
 
 Positionals:
   number  PR number to checkout                                                  [number] [required]
@@ -358,13 +356,13 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode session --help 1`] = `
-"entrox session
+"opencode session
 
 manage sessions
 
 Commands:
-  entrox session list                list sessions
-  entrox session delete <sessionID>  delete a session
+  opencode session list                list sessions
+  opencode session delete <sessionID>  delete a session
 
 Options:
   -h, --help        show help                                                              [boolean]
@@ -375,7 +373,7 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode plugin --help 1`] = `
-"entrox plugin <module>
+"opencode plugin <module>
 
 install plugin and update config
 
@@ -393,14 +391,13 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode db --help 1`] = `
-"entrox db
+"opencode db
 
 database tools
 
 Commands:
-  entrox db [query]     open an interactive sqlite3 shell or run a query                   [default]
-  entrox db path        print the database path
-  entrox db migrate     migrate JSON data to SQLite (merges with existing data)
+  opencode db [query]     open an interactive sqlite3 shell or run a query                 [default]
+  opencode db path        print the database path
 
 Positionals:
   query  SQL query to execute                                                               [string]
@@ -415,7 +412,7 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode mcp list --help 1`] = `
-"entrox mcp list
+"opencode mcp list
 
 list MCP servers and their status
 
@@ -428,7 +425,7 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode mcp add --help 1`] = `
-"entrox mcp add
+"opencode mcp add
 
 add an MCP server
 
@@ -441,12 +438,12 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode mcp auth --help 1`] = `
-"entrox mcp auth [name]
+"opencode mcp auth [name]
 
 authenticate with an OAuth-enabled MCP server
 
 Commands:
-  entrox mcp auth list  list OAuth-capable MCP servers and their auth status           [aliases: ls]
+  opencode mcp auth list  list OAuth-capable MCP servers and their auth status         [aliases: ls]
 
 Positionals:
   name  name of the MCP server                                                              [string]
@@ -460,7 +457,7 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode mcp logout --help 1`] = `
-"entrox mcp logout [name]
+"opencode mcp logout [name]
 
 remove OAuth credentials for an MCP server
 
@@ -476,7 +473,7 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode providers list --help 1`] = `
-"entrox providers list
+"opencode providers list
 
 list providers and credentials
 
@@ -489,12 +486,12 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode providers login --help 1`] = `
-"entrox providers login [url]
+"opencode providers login [url]
 
 log in to a provider
 
 Positionals:
-  url  entrox auth provider                                                                 [string]
+  url  opencode auth provider                                                               [string]
 
 Options:
   -h, --help        show help                                                              [boolean]
@@ -507,7 +504,7 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode providers logout --help 1`] = `
-"entrox providers logout
+"opencode providers logout
 
 log out from a configured provider
 
@@ -520,7 +517,7 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode agent create --help 1`] = `
-"entrox agent create
+"opencode agent create
 
 create a new agent
 
@@ -540,7 +537,7 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode agent list --help 1`] = `
-"entrox agent list
+"opencode agent list
 
 list all available agents
 
@@ -553,7 +550,7 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode session list --help 1`] = `
-"entrox session list
+"opencode session list
 
 list sessions
 
@@ -568,7 +565,7 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode session delete --help 1`] = `
-"entrox session delete <sessionID>
+"opencode session delete <sessionID>
 
 delete a session
 
@@ -584,7 +581,7 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode github install --help 1`] = `
-"entrox github install
+"opencode github install
 
 install the GitHub agent
 
@@ -597,7 +594,7 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode github run --help 1`] = `
-"entrox github run
+"opencode github run
 
 run the GitHub agent
 
@@ -612,7 +609,7 @@ Options:
 `;
 
 exports[`opencode CLI help-text snapshots every documented command emits stable help text: opencode db path --help 1`] = `
-"entrox db path
+"opencode db path
 
 print the database path
 

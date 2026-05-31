@@ -28,6 +28,16 @@ export class ApiWorkspaceWarpError extends Schema.ErrorClass<ApiWorkspaceWarpErr
   { httpApiStatus: 400 },
 ) {}
 
+export class ApiWorkspaceCreateError extends Schema.ErrorClass<ApiWorkspaceCreateError>("WorkspaceCreateError")(
+  {
+    name: Schema.Literal("WorkspaceCreateError"),
+    data: Schema.Struct({
+      message: Schema.String,
+    }),
+  },
+  { httpApiStatus: 400 },
+) {}
+
 export const WorkspacePaths = {
   adapters: `${root}/adapter`,
   list: root,
@@ -65,7 +75,7 @@ export const WorkspaceApi = HttpApi.make("workspace")
           query: WorkspaceRoutingQuery,
           payload: CreatePayload,
           success: described(Workspace.Info, "Workspace created"),
-          error: HttpApiError.BadRequest,
+          error: [ApiWorkspaceCreateError, HttpApiError.BadRequest],
         }).annotateMerge(
           OpenApi.annotations({
             identifier: "experimental.workspace.create",

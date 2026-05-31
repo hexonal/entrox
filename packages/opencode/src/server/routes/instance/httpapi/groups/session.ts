@@ -1,6 +1,7 @@
 import { Permission } from "@/permission"
+import { SessionLegacy } from "@opencode-ai/core/session/legacy"
 import { PermissionID } from "@/permission/schema"
-import { ModelID, ProviderID } from "@/provider/schema"
+
 import { Session } from "@/session/session"
 import { MessageV2 } from "@/session/message-v2"
 import { SessionPrompt } from "@/session/prompt"
@@ -22,6 +23,7 @@ import {
 import { ApiNotFoundError, PermissionNotFoundError, SessionBusyError } from "../errors"
 import { described } from "./metadata"
 import { QueryBoolean } from "./query"
+import { ProviderV2 } from "@opencode-ai/core/provider"
 import { Brand } from "@/brand"
 
 const root = "/session"
@@ -46,6 +48,7 @@ export const MessagesQuery = Schema.Struct({
 export const StatusMap = Schema.Record(Schema.String, SessionStatus.Info)
 export const UpdatePayload = Schema.Struct({
   title: Schema.optional(Schema.String),
+  metadata: Schema.optional(Session.Metadata),
   permission: Schema.optional(Permission.Ruleset),
   time: Schema.optional(
     Schema.Struct({
@@ -55,13 +58,13 @@ export const UpdatePayload = Schema.Struct({
 })
 export const ForkPayload = Schema.Struct(Struct.omit(Session.ForkInput.fields, ["sessionID"]))
 export const InitPayload = Schema.Struct({
-  modelID: ModelID,
-  providerID: ProviderID,
+  modelID: ProviderV2.ModelID,
+  providerID: ProviderV2.ID,
   messageID: MessageID,
 })
 export const SummarizePayload = Schema.Struct({
-  providerID: ProviderID,
-  modelID: ModelID,
+  providerID: ProviderV2.ID,
+  modelID: ProviderV2.ModelID,
   auto: Schema.optional(Schema.Boolean),
 })
 export const PromptPayload = Schema.Struct(Struct.omit(SessionPrompt.PromptInput.fields, ["sessionID"]))
@@ -112,7 +115,7 @@ export const SessionApi = HttpApi.make("session")
           OpenApi.annotations({
             identifier: "session.list",
             summary: "List sessions",
-            description: `Get a list of all ${Brand.name} sessions, sorted by most recently updated.`,
+            description: `Get a list of all ${Brand.product} sessions, sorted by most recently updated.`,
           }),
         ),
         HttpApiEndpoint.get("status", SessionPaths.status, {
@@ -135,7 +138,7 @@ export const SessionApi = HttpApi.make("session")
           OpenApi.annotations({
             identifier: "session.get",
             summary: "Get session",
-            description: `Retrieve detailed information about a specific ${Brand.name} session.`,
+            description: `Retrieve detailed information about a specific ${Brand.product} session.`,
           }),
         ),
         HttpApiEndpoint.get("children", SessionPaths.children, {
@@ -176,7 +179,7 @@ export const SessionApi = HttpApi.make("session")
         HttpApiEndpoint.get("messages", SessionPaths.messages, {
           params: { sessionID: SessionID },
           query: MessagesQuery,
-          success: described(Schema.Array(MessageV2.WithParts), "List of messages"),
+          success: described(Schema.Array(SessionLegacy.WithParts), "List of messages"),
           error: [HttpApiError.BadRequest, ApiNotFoundError],
         }).annotateMerge(
           OpenApi.annotations({
@@ -188,7 +191,7 @@ export const SessionApi = HttpApi.make("session")
         HttpApiEndpoint.get("message", SessionPaths.message, {
           params: { sessionID: SessionID, messageID: MessageID },
           query: WorkspaceRoutingQuery,
-          success: described(MessageV2.WithParts, "Message"),
+          success: described(SessionLegacy.WithParts, "Message"),
           error: [HttpApiError.BadRequest, ApiNotFoundError],
         }).annotateMerge(
           OpenApi.annotations({
@@ -206,7 +209,7 @@ export const SessionApi = HttpApi.make("session")
           OpenApi.annotations({
             identifier: "session.create",
             summary: "Create session",
-            description: `Create a new ${Brand.name} session for interacting with AI assistants and managing conversations.`,
+            description: `Create a new ${Brand.product} session for interacting with AI assistants and managing conversations.`,
           }),
         ),
         HttpApiEndpoint.delete("remove", SessionPaths.remove, {
@@ -314,7 +317,7 @@ export const SessionApi = HttpApi.make("session")
           params: { sessionID: SessionID },
           query: WorkspaceRoutingQuery,
           payload: PromptPayload,
-          success: described(MessageV2.WithParts, "Created message"),
+          success: described(SessionLegacy.WithParts, "Created message"),
           error: [HttpApiError.BadRequest, ApiNotFoundError],
         }).annotateMerge(
           OpenApi.annotations({
@@ -341,7 +344,7 @@ export const SessionApi = HttpApi.make("session")
           params: { sessionID: SessionID },
           query: WorkspaceRoutingQuery,
           payload: CommandPayload,
-          success: described(MessageV2.WithParts, "Created message"),
+          success: described(SessionLegacy.WithParts, "Created message"),
           error: [HttpApiError.BadRequest, ApiNotFoundError],
         }).annotateMerge(
           OpenApi.annotations({
@@ -354,7 +357,7 @@ export const SessionApi = HttpApi.make("session")
           params: { sessionID: SessionID },
           query: WorkspaceRoutingQuery,
           payload: ShellPayload,
-          success: described(MessageV2.WithParts, "Created message"),
+          success: described(SessionLegacy.WithParts, "Created message"),
           error: [HttpApiError.BadRequest, ApiNotFoundError, SessionBusyError],
         }).annotateMerge(
           OpenApi.annotations({
@@ -430,8 +433,8 @@ export const SessionApi = HttpApi.make("session")
         HttpApiEndpoint.patch("updatePart", SessionPaths.updatePart, {
           params: { sessionID: SessionID, messageID: MessageID, partID: PartID },
           query: WorkspaceRoutingQuery,
-          payload: MessageV2.Part,
-          success: described(MessageV2.Part, "Successfully updated part"),
+          payload: SessionLegacy.Part,
+          success: described(SessionLegacy.Part, "Successfully updated part"),
           error: [HttpApiError.BadRequest, ApiNotFoundError],
         }).annotateMerge(
           OpenApi.annotations({
