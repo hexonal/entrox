@@ -18,7 +18,7 @@
     "dev:temporary": "bun run --conditions=browser ./src/temporary.ts"
   },
   "bin": {
-    "entrox": "./bin/opencode"
+    "entrox": "./bin/entrox"
   },
   "exports": {
     "./*": "./src/*.ts"

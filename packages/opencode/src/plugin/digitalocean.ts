@@ -3,7 +3,7 @@ import type { Model } from "@opencode-ai/sdk/v2"
 import * as Log from "@opencode-ai/core/util/log"
 import { InstallationVersion } from "@opencode-ai/core/installation/version"
 import { createServer } from "http"
-import { Brand } from "@/brand"
+import { Brand, brandUserAgent } from "@/brand"
 import open from "open"
 
 const log = Log.create({ service: "plugin.digitalocean" })
@@ -234,7 +234,7 @@ async function listRouters(
     headers: {
       Authorization: `Bearer ${bearer}`,
       Accept: "application/json",
-      "User-Agent": `opencode/${InstallationVersion}`,
+      "User-Agent": brandUserAgent(InstallationVersion),
     },
     signal: AbortSignal.timeout(10_000),
   }).catch(() => undefined)

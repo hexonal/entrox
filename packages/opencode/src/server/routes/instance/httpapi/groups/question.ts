@@ -7,6 +7,7 @@ import { Authorization } from "../middleware/authorization"
 import { InstanceContextMiddleware } from "../middleware/instance-context"
 import { WorkspaceRoutingMiddleware, WorkspaceRoutingQuery } from "../middleware/workspace-routing"
 import { described } from "./metadata"
+import { Brand } from "@/brand"
 
 const root = "/question"
 const ReplyPayload = Schema.Struct({
@@ -67,7 +68,7 @@ export const QuestionApi = HttpApi.make("question")
   )
   .annotateMerge(
     OpenApi.annotations({
-      title: "opencode HttpApi",
+      title: `${Brand.product} HttpApi`,
       version: "0.0.1",
       description: "Effect HttpApi surface for instance routes.",
     }),

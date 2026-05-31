@@ -13,8 +13,9 @@ import { Effect, Record } from "effect"
 import { jsonSchema, tool as aiTool, type ModelMessage, type Tool } from "ai"
 import type { Plugin } from "@/plugin"
 import { mergeDeep } from "remeda"
+import { brandUserAgent } from "@/brand"
 
-const USER_AGENT = `opencode/${InstallationVersion}`
+const USER_AGENT = brandUserAgent(InstallationVersion)
 
 type PrepareInput = {
   readonly user: SessionLegacy.User

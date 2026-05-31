@@ -19,6 +19,7 @@ import { Filesystem } from "@/util/filesystem"
 import { InstanceLayer } from "@/project/instance-layer"
 import { testEffect } from "../lib/effect"
 import { ProviderV2 } from "@opencode-ai/core/provider"
+import { Brand } from "@/brand"
 
 const originalEnv = new Map<string, string | undefined>()
 
@@ -72,6 +73,28 @@ const paid = (providers: Record<string, { models: Record<string, { cost: { input
   const item = providers[ProviderV2.ID.make("opencode")]
   expect(item).toBeDefined()
   return Object.values(item.models).filter((model) => model.cost.input > 0).length
+}
+
+const opencodeProviderConfig = {
+  provider: {
+    opencode: {
+      env: ["OPENCODE_API_KEY"],
+      models: {
+        free: {
+          name: "Free",
+          tool_call: true,
+          limit: { context: 8000, output: 2000 },
+          cost: { input: 0, output: 0 },
+        },
+        paid: {
+          name: "Paid",
+          tool_call: true,
+          limit: { context: 8000, output: 2000 },
+          cost: { input: 1, output: 1 },
+        },
+      },
+    },
+  },
 }
 
 const languageBaseURL = (language: unknown) => (language as { config: { baseURL: string } }).config.baseURL
@@ -1037,12 +1060,12 @@ it.instance("ModelNotFoundError for provider includes suggestions", () =>
 
 it.instance("ModelNotFoundError suggests catalog models for unloaded providers", () =>
   Effect.gen(function* () {
-    yield* remove("OPENCODE_API_KEY")
+    yield* remove("ANTHROPIC_API_KEY")
     const error = yield* Provider.use
-      .getModel(ProviderV2.ID.opencode, ProviderV2.ModelID.make("claude-haiku-fake-model"))
+      .getModel(ProviderV2.ID.anthropic, ProviderV2.ModelID.make("claude-haiku-fake-model"))
       .pipe(Effect.flip)
     if (!Provider.ModelNotFoundError.isInstance(error)) throw error
-    expect(error.suggestions ?? []).toContain("claude-haiku-4-5")
+    expect(error.suggestions?.some((id) => id.includes("haiku"))).toBe(true)
   }),
 )
 
@@ -1126,9 +1149,9 @@ it.instance(
   Effect.gen(function* () {
     const providers = yield* list
     expect(providers[ProviderV2.ID.make("nvidia")].options.headers).toEqual({
-      "HTTP-Referer": "https://opencode.ai/",
-      "X-Title": "opencode",
-      "X-BILLING-INVOKE-ORIGIN": "OpenCode",
+      "HTTP-Referer": Brand.websiteURL + "/",
+      "X-Title": Brand.product,
+      "X-BILLING-INVOKE-ORIGIN": Brand.product,
     })
   }),
   { config: { provider: { nvidia: { options: { apiKey: "test-api-key" } } } } },
@@ -1139,9 +1162,9 @@ it.instance(
   Effect.gen(function* () {
     const providers = yield* list
     expect(providers[ProviderV2.ID.make("nvidia")].options.headers).toEqual({
-      "HTTP-Referer": "https://opencode.ai/",
-      "X-Title": "opencode",
-      "X-BILLING-INVOKE-ORIGIN": "OpenCode",
+      "HTTP-Referer": Brand.websiteURL + "/",
+      "X-Title": Brand.product,
+      "X-BILLING-INVOKE-ORIGIN": Brand.product,
     })
   }),
   { config: { provider: { nvidia: { options: { apiKey: "test-api-key", baseURL: "http://localhost:8000/v1" } } } } },
@@ -1746,9 +1769,9 @@ it.instance(
 
 it.effect("opencode loader keeps paid models when config apiKey is present", () =>
   Effect.gen(function* () {
-    const noneDir = yield* tmpdirScoped()
+    const noneDir = yield* tmpdirScoped({ config: opencodeProviderConfig })
     const keyedDir = yield* tmpdirScoped({
-      config: { provider: { opencode: { options: { apiKey: "test-key" } } } },
+      config: { provider: { opencode: { ...opencodeProviderConfig.provider.opencode, options: { apiKey: "test-key" } } } },
     })
 
     const listIn = (directory: string) =>
@@ -1767,8 +1790,8 @@ it.effect("opencode loader keeps paid models when config apiKey is present", () 
 
 it.effect("opencode loader keeps paid models when auth exists", () =>
   Effect.gen(function* () {
-    const noneDir = yield* tmpdirScoped()
-    const keyedDir = yield* tmpdirScoped()
+    const noneDir = yield* tmpdirScoped({ config: opencodeProviderConfig })
+    const keyedDir = yield* tmpdirScoped({ config: opencodeProviderConfig })
 
     const listIn = (directory: string) =>
       Provider.use

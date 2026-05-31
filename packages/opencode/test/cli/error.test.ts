@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { AccountTransportError } from "../../src/account/schema"
+import { Brand } from "../../src/brand"
 import { FormatError } from "../../src/cli/error"
 import { UI } from "../../src/cli/ui"
 
@@ -73,8 +74,8 @@ describe("cli.error", () => {
     const expected = [
       "Model not found: anthropic/claude-sonet-4",
       "Did you mean: claude-sonnet-4",
-      "Try: `opencode models` to list available models",
-      "Or check your config (opencode.json) provider/model names",
+      `Try: \`${Brand.command} models\` to list available models`,
+      `Or check your config (${Brand.configBase}.json) provider/model names`,
     ].join("\n")
 
     expect(FormatError({ name: "ProviderModelNotFoundError", data })).toBe(expected)

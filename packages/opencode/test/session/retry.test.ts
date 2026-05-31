@@ -12,6 +12,7 @@ import { SessionID } from "../../src/session/schema"
 import { SessionStatus } from "../../src/session/status"
 import { testEffect } from "../lib/effect"
 import { ProviderV2 } from "@opencode-ai/core/provider"
+import { Brand } from "@/brand"
 
 const providerID = ProviderV2.ID.make("test")
 const retryProvider = "test"
@@ -304,7 +305,7 @@ describe("session.retry.retryable", () => {
 
     expect(SessionRetry.retryable(error, "opencode-go")).toEqual({
       message:
-        "5 hour usage limit reached. It will reset in 5 hours 23 minutes. To continue using this model now, enable usage from your available balance - https://opencode.ai/workspace/wrk_01K6XGM22R6FM8JVABE9XDQXGH/go",
+        `5 hour usage limit reached. It will reset in 5 hours 23 minutes. To continue using this model now, enable usage from your available balance - ${Brand.websiteURL}/workspace/wrk_01K6XGM22R6FM8JVABE9XDQXGH/go`,
       action: {
         reason: "account_rate_limit",
         provider: "opencode-go",
@@ -312,7 +313,7 @@ describe("session.retry.retryable", () => {
         message:
           "5 hour usage limit reached. It will reset in 5 hours 23 minutes. To continue using this model now, enable usage from your available balance",
         label: "open settings",
-        link: "https://opencode.ai/workspace/wrk_01K6XGM22R6FM8JVABE9XDQXGH/go",
+        link: `${Brand.websiteURL}/workspace/wrk_01K6XGM22R6FM8JVABE9XDQXGH/go`,
       },
     })
   })

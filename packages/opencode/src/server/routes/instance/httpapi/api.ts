@@ -24,6 +24,7 @@ import { V2Api } from "./groups/v2"
 import { GlobalApi } from "./groups/global"
 import { Authorization } from "./middleware/authorization"
 import { SchemaErrorMiddleware } from "./middleware/schema-error"
+import { Brand } from "@/brand"
 
 const EventSchema = Schema.Union([
   ...EventV2.registry
@@ -39,13 +40,13 @@ const EventSchema = Schema.Union([
   InstanceDisposed,
 ]).annotate({ identifier: "Event" })
 
-export const RootHttpApi = HttpApi.make("opencode-root")
+export const RootHttpApi = HttpApi.make(`${Brand.command}-root`)
   .addHttpApi(ControlApi)
   .addHttpApi(GlobalApi)
   .middleware(SchemaErrorMiddleware)
   .middleware(Authorization)
 
-export const InstanceHttpApi = HttpApi.make("opencode-instance")
+export const InstanceHttpApi = HttpApi.make(`${Brand.command}-instance`)
   .addHttpApi(ConfigApi)
   .addHttpApi(ExperimentalApi)
   .addHttpApi(FileApi)
@@ -63,7 +64,7 @@ export const InstanceHttpApi = HttpApi.make("opencode-instance")
   .addHttpApi(WorkspaceApi)
   .middleware(SchemaErrorMiddleware)
 
-export const OpenCodeHttpApi = HttpApi.make("opencode")
+export const EntroxHttpApi = HttpApi.make(Brand.command)
   .addHttpApi(RootHttpApi)
   .addHttpApi(EventApi)
   .addHttpApi(InstanceHttpApi)

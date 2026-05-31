@@ -6,6 +6,15 @@ import { InstanceRef } from "@/effect/instance-ref"
 import { Process } from "@/util/process"
 import { Brand } from "@/brand"
 
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+export function parsePrSessionUrl(body: string) {
+  const match = body.match(new RegExp(`${escapeRegex(Brand.shareBaseURL)}/(?:s|share)/([a-zA-Z0-9_-]+)`))
+  if (match) return `${Brand.shareBaseURL}/share/${match[1]}`
+}
+
 export const PrCommand = effectCmd({
   command: "pr <number>",
   describe: `fetch and checkout a GitHub PR branch, then run ${Brand.command}`,
@@ -74,9 +83,8 @@ export const PrCommand = effectCmd({
       }
 
       if (prInfo?.body) {
-        const sessionMatch = prInfo.body.match(/https:\/\/opncd\.ai\/s\/([a-zA-Z0-9_-]+)/)
-        if (sessionMatch) {
-          const sessionUrl = sessionMatch[0]
+        const sessionUrl = parsePrSessionUrl(prInfo.body)
+        if (sessionUrl) {
           UI.println(`Found ${Brand.display} session: ${sessionUrl}`)
           UI.println(`Importing session...`)
 

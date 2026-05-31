@@ -45,7 +45,34 @@ type ProviderOption =
       type: "well-known"
     })
 
-export function providerOptions(_list: { id: string; name: string }[]): ProviderOption[] {
+export type LoginAction = "keep" | "replace"
+
+export function credentialDisplayName(key: string, bundledURL = Brand.authProviderURL) {
+  return normalizeWellKnownProviderURL(key) === normalizeWellKnownProviderURL(bundledURL) ? Brand.product : key
+}
+
+export function loginActionOptions(hasExisting: boolean): Array<{ label: string; value: LoginAction }> {
+  if (!hasExisting) return []
+  return [
+    { label: `Use existing ${Brand.product} login`, value: "keep" },
+    { label: "Log in again", value: "replace" },
+  ]
+}
+
+export function providerOptions(list: { id: string; name: string }[]): ProviderOption[] {
+  const configured = [...list]
+    .filter((provider) => provider.id !== Brand.legacyCommand && provider.id !== "other")
+    .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
+    .map(
+      (provider): ProviderOption => ({
+        type: "provider",
+        providerID: provider.id,
+        title: provider.name || provider.id,
+        value: provider.id,
+        category: "Configured",
+      }),
+    )
+
   return [
     {
       type: "well-known",
@@ -54,6 +81,7 @@ export function providerOptions(_list: { id: string; name: string }[]): Provider
       description: "Browser login",
       category: "Provider",
     },
+    ...configured,
   ]
 }
 
@@ -225,7 +253,14 @@ function WellKnownMethod(props: { url: string }) {
     }
 
     try {
-      const response = await fetch(`${url}/.well-known/opencode`)
+      const existing = sync.data.provider_next.connected.includes(url)
+      if (existing) {
+        toast.show({ variant: "success", message: `Using existing ${credentialDisplayName(url)}` })
+        dialog.replace(() => <DialogModel />)
+        return
+      }
+
+      const response = await fetch(`${url}${Brand.wellKnownPath}`)
       if (!response.ok) throw new Error(`Metadata request failed with HTTP ${response.status}`)
       const metadata: unknown = await response.json()
       if (!isWellKnownMetadata(metadata)) throw new Error("Metadata response is missing auth.command or auth.env")

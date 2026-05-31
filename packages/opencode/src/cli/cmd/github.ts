@@ -36,6 +36,7 @@ import { setTimeout as sleep } from "node:timers/promises"
 import { Process } from "@/util/process"
 import { parseGitHubRemote } from "@/util/repository"
 import { Effect } from "effect"
+import { Brand } from "@/brand"
 
 type GitHubAuthor = {
   login: string
@@ -140,9 +141,19 @@ type IssueQueryResponse = {
   }
 }
 
-const AGENT_USERNAME = "opencode-agent[bot]"
+const AGENT_USERNAME = Brand.githubAgentUsername
 const AGENT_REACTION = "eyes"
-const WORKFLOW_FILE = ".github/workflows/opencode.yml"
+const WORKFLOW_FILE = Brand.githubWorkflowFile
+
+export function githubWorkflowCommentCondition(bodyExpression: string) {
+  const mentions = [...new Set([...Brand.githubCommentMentions.split(","), "/oc"].map((m) => m.trim()).filter(Boolean))]
+  return mentions
+    .flatMap((mention) => [
+      `contains(${bodyExpression}, ' ${mention}')`,
+      `startsWith(${bodyExpression}, '${mention}')`,
+    ])
+    .join(" ||\n      ")
+}
 
 // Event categories for routing
 // USER_EVENTS: triggered by user actions, have actor/issueId, support reactions/comments
@@ -241,7 +252,7 @@ export const GithubInstallCommand = effectCmd({
               "",
               "    3. Go to a GitHub issue and comment `/oc summarize` to see the agent in action",
               "",
-              "   Learn more about the GitHub agent - https://opencode.ai/docs/github/#usage-examples",
+              `   Learn more about the GitHub agent - ${Brand.docsURL}/github/#usage-examples`,
             ].join("\n"),
           )
         }
@@ -325,7 +336,7 @@ export const GithubInstallCommand = effectCmd({
           if (installation) return s.stop("GitHub app already installed")
 
           // Open browser
-          const url = "https://github.com/apps/opencode-agent"
+          const url = Brand.githubAppURL
           const command =
             process.platform === "darwin"
               ? `open "${url}"`
@@ -362,7 +373,7 @@ export const GithubInstallCommand = effectCmd({
 
           async function getInstallation() {
             return await fetch(
-              `https://api.opencode.ai/get_github_app_installation?owner=${app.owner}&repo=${app.repo}`,
+              `${Brand.apiURL}/get_github_app_installation?owner=${app.owner}&repo=${app.repo}`,
             )
               .then((res) => res.json())
               .then((data) => data.installation)
@@ -377,7 +388,7 @@ export const GithubInstallCommand = effectCmd({
 
           await Filesystem.write(
             path.join(app.root, WORKFLOW_FILE),
-            `name: opencode
+            `name: ${Brand.command}
 
 on:
   issue_comment:
@@ -386,12 +397,9 @@ on:
     types: [created]
 
 jobs:
-  opencode:
+  ${Brand.command}:
     if: |
-      contains(github.event.comment.body, ' /oc') ||
-      startsWith(github.event.comment.body, '/oc') ||
-      contains(github.event.comment.body, ' /opencode') ||
-      startsWith(github.event.comment.body, '/opencode')
+      ${githubWorkflowCommentCondition("github.event.comment.body")}
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -404,8 +412,8 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Run opencode
-        uses: anomalyco/opencode/github@latest${envStr}
+      - name: Run ${Brand.product}
+        uses: ${Brand.githubAction}${envStr}
         with:
           model: ${provider}/${model}`,
           )
@@ -483,7 +491,7 @@ export const GithubRunCommand = effectCmd({
           ? (payload as IssueCommentEvent | IssuesEvent).issue.number
           : (payload as PullRequestEvent | PullRequestReviewCommentEvent).pull_request.number
       const runUrl = `/${owner}/${repo}/actions/runs/${runId}`
-      const shareBaseUrl = isMock ? "https://dev.opencode.ai" : "https://opencode.ai"
+      const shareBaseUrl = isMock ? Brand.shareBaseURL : Brand.shareBaseURL
 
       let appToken: string
       let octoRest: Octokit
@@ -551,7 +559,7 @@ export const GithubRunCommand = effectCmd({
           await addReaction(commentType)
         }
 
-        // Setup opencode session
+        // Setup Entrox session
         const repoData = await fetchRepo()
         session = await runLocalEffect(
           sessionSvc.create({
@@ -571,7 +579,7 @@ export const GithubRunCommand = effectCmd({
           await runLocalEffect(sessionShare.share(session.id))
           return session.id.slice(-8)
         })()
-        console.log("opencode session", session.id)
+        console.log(`${Brand.name} session`, session.id)
 
         // Handle event types:
         // REPO_EVENTS (schedule, workflow_dispatch): no issue/PR context, output to logs/PR only
@@ -744,7 +752,7 @@ export const GithubRunCommand = effectCmd({
 
       function normalizeOidcBaseUrl(): string {
         const value = process.env["OIDC_BASE_URL"]
-        if (!value) return "https://api.opencode.ai"
+        if (!value) return Brand.apiURL
         return value.replace(/\/+$/, "")
       }
 
@@ -793,7 +801,7 @@ export const GithubRunCommand = effectCmd({
         }
 
         const reviewContext = getReviewCommentContext()
-        const mentions = (process.env["MENTIONS"] || "/opencode,/oc")
+        const mentions = (process.env["MENTIONS"] || Brand.githubCommentMentions)
           .split(",")
           .map((m) => m.trim().toLowerCase())
           .filter(Boolean)
@@ -1135,9 +1143,9 @@ export const GithubRunCommand = effectCmd({
           .join("")
         if (type === "schedule" || type === "dispatch") {
           const hex = crypto.randomUUID().slice(0, 6)
-          return `opencode/${type}-${hex}-${timestamp}`
+          return `${Brand.command}/${type}-${hex}-${timestamp}`
         }
-        return `opencode/${type}${issueId}-${timestamp}`
+        return `${Brand.command}/${type}${issueId}-${timestamp}`
       }
 
       async function pushToNewBranch(summary: string, branch: string, commit: boolean, isSchedule: boolean) {
@@ -1409,9 +1417,9 @@ export const GithubRunCommand = effectCmd({
           const titleAlt = encodeURIComponent(session.title.substring(0, 50))
           const title64 = Buffer.from(session.title.substring(0, 700), "utf8").toString("base64")
 
-          return `<a href="${shareBaseUrl}/s/${shareId}"><img width="200" alt="${titleAlt}" src="https://social-cards.sst.dev/opencode-share/${title64}.png?model=${providerID}/${modelID}&version=${session.version}&id=${shareId}" /></a>\n`
+          return `<a href="${shareBaseUrl}/s/${shareId}"><img width="200" alt="${titleAlt}" src="${Brand.socialCardBaseURL}/${title64}.png?model=${providerID}/${modelID}&version=${session.version}&id=${shareId}" /></a>\n`
         })()
-        const shareUrl = shareId ? `[opencode session](${shareBaseUrl}/s/${shareId})&nbsp;&nbsp;|&nbsp;&nbsp;` : ""
+        const shareUrl = shareId ? `[${Brand.name} session](${shareBaseUrl}/s/${shareId})&nbsp;&nbsp;|&nbsp;&nbsp;` : ""
         return `\n\n${image}${shareUrl}[github run](${runUrl})`
       }
 
@@ -1472,7 +1480,7 @@ query($owner: String!, $repo: String!, $number: Int!) {
         return [
           "<github_action_context>",
           "You are running as a GitHub Action. Important:",
-          "- Git push and PR creation are handled AUTOMATICALLY by the opencode infrastructure after your response",
+          `- Git push and PR creation are handled AUTOMATICALLY by the ${Brand.name} infrastructure after your response`,
           "- Do NOT include warnings or disclaimers about GitHub tokens, workflow permissions, or PR creation capabilities",
           "- Do NOT suggest manual steps for creating PRs or pushing code - this happens automatically",
           "- Focus only on the code changes and your analysis/response",
@@ -1610,7 +1618,7 @@ query($owner: String!, $repo: String!, $number: Int!) {
         return [
           "<github_action_context>",
           "You are running as a GitHub Action. Important:",
-          "- Git push and PR creation are handled AUTOMATICALLY by the opencode infrastructure after your response",
+          `- Git push and PR creation are handled AUTOMATICALLY by the ${Brand.name} infrastructure after your response`,
           "- Do NOT include warnings or disclaimers about GitHub tokens, workflow permissions, or PR creation capabilities",
           "- Do NOT suggest manual steps for creating PRs or pushing code - this happens automatically",
           "- Focus only on the code changes and your analysis/response",

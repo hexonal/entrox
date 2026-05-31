@@ -45,8 +45,25 @@ const cliTry = <Value>(message: string, fn: () => PromiseLike<Value>) =>
 const wellKnownLogin = Effect.fn("Cli.providers.wellKnownLogin")(function* (input?: { url?: string }) {
   const authSvc = yield* Auth.Service
   const url = (input?.url ?? Brand.authProviderURL).replace(/\/+$/, "")
+  const existing = yield* Effect.orDie(authSvc.get(url))
+  if (existing) {
+    const action = yield* promptValue(
+      yield* Prompt.select({
+        message: `Existing ${displayCredentialName(url)} credential found`,
+        options: [
+          { label: `Use existing ${displayCredentialName(url)} login`, value: "keep" },
+          { label: "Log in again", value: "replace" },
+        ],
+      }),
+    )
+    if (action === "keep") {
+      yield* Prompt.log.success(`Using existing ${displayCredentialName(url)} login`)
+      yield* Prompt.outro("Done")
+      return
+    }
+  }
   const wellknown = (yield* cliTry(`Failed to load auth provider metadata from ${url}: `, () =>
-    fetch(`${url}/.well-known/opencode`).then((x) => {
+    fetch(`${url}${Brand.wellKnownPath}`).then((x) => {
       if (!x.ok) throw new Error(`HTTP ${x.status}`)
       return x.json()
     }),
@@ -71,6 +88,10 @@ const wellKnownLogin = Effect.fn("Cli.providers.wellKnownLogin")(function* (inpu
   yield* Prompt.log.success("Logged into " + url)
   yield* Prompt.outro("Done")
 })
+
+function displayCredentialName(key: string) {
+  return key.replace(/\/+$/, "") === Brand.authProviderURL.replace(/\/+$/, "") ? Brand.product : key
+}
 
 const handlePluginAuth = Effect.fn("Cli.providers.pluginAuth")(function* (
   plugin: { auth: PluginAuth },
@@ -311,7 +332,7 @@ export const ProvidersListCommand = effectCmd({
     const database = yield* modelsDev.get()
 
     for (const [providerID, result] of results) {
-      const name = database[providerID]?.name || providerID
+      const name = database[providerID]?.name || displayCredentialName(providerID)
       yield* Prompt.log.info(`${name} ${UI.Style.TEXT_DIM}${result.type}`)
     }
 
@@ -488,7 +509,7 @@ export const ProvidersLoginCommand = effectCmd({
     }
 
     if (provider === "opencode") {
-      yield* Prompt.log.info("Create an api key at https://opencode.ai/auth")
+      yield* Prompt.log.info(`Create an api key at ${Brand.authURL}`)
     }
 
     if (provider === "vercel") {
@@ -497,7 +518,7 @@ export const ProvidersLoginCommand = effectCmd({
 
     if (["cloudflare", "cloudflare-ai-gateway"].includes(provider)) {
       yield* Prompt.log.info(
-        "Cloudflare AI Gateway can be configured with CLOUDFLARE_GATEWAY_ID, CLOUDFLARE_ACCOUNT_ID, and CLOUDFLARE_API_TOKEN environment variables. Read more: https://opencode.ai/docs/providers/#cloudflare-ai-gateway",
+        `Cloudflare AI Gateway can be configured with CLOUDFLARE_GATEWAY_ID, CLOUDFLARE_ACCOUNT_ID, and CLOUDFLARE_API_TOKEN environment variables. Read more: ${Brand.docsURL}/providers/#cloudflare-ai-gateway`,
       )
     }
 

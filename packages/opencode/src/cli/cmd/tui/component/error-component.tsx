@@ -4,6 +4,7 @@ import * as Clipboard from "@tui/util/clipboard"
 import { createSignal } from "solid-js"
 import { InstallationVersion } from "@opencode-ai/core/installation/version"
 import { getScrollAcceleration } from "../util/scroll"
+import { Brand } from "@/brand"
 
 export function ErrorComponent(props: {
   error: Error
@@ -20,7 +21,7 @@ export function ErrorComponent(props: {
   })
   const [copied, setCopied] = createSignal(false)
 
-  const issueURL = new URL("https://github.com/anomalyco/opencode/issues/new?template=bug-report.yml")
+  const issueURL = new URL(Brand.issueURL)
 
   // Choose safe fallback colors per mode since theme context may not be available
   const isLight = props.mode === "light"
@@ -42,7 +43,7 @@ export function ErrorComponent(props: {
     )
   }
 
-  issueURL.searchParams.set("opencode-version", InstallationVersion)
+  issueURL.searchParams.set(`${Brand.command}-version`, InstallationVersion)
 
   const copyIssueURL = () => {
     void Clipboard.copy(issueURL.toString()).then(() => {

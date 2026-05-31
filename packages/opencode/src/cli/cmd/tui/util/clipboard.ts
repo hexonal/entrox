@@ -8,6 +8,7 @@ import { ChildProcess } from "effect/unstable/process"
 import { AppProcess } from "@opencode-ai/core/process"
 import * as Filesystem from "../../../../util/filesystem"
 import * as Process from "../../../../util/process"
+import { Brand } from "@/brand"
 
 const writeWithStdin = (cmd: string[], text: string): Promise<void> =>
   Effect.runPromise(
@@ -60,7 +61,7 @@ export async function read(): Promise<Content | undefined> {
   const os = platform()
 
   if (os === "darwin") {
-    const tmpfile = path.join(tmpdir(), "opencode-clipboard.png")
+    const tmpfile = path.join(tmpdir(), `${Brand.command}-clipboard.png`)
     try {
       await Process.run(
         [

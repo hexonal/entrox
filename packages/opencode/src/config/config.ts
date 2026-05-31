@@ -44,6 +44,7 @@ import { ConfigVariable } from "./variable"
 import { Npm } from "@opencode-ai/core/npm"
 import { withTransientReadRetry } from "@/util/effect-http-client"
 import { ConfigExperimental } from "@opencode-ai/core/config/experimental"
+import { Brand } from "@/brand"
 
 const log = Log.create({ service: "config" })
 
@@ -69,7 +70,7 @@ function normalizeLoadedConfig(data: unknown, source: string) {
   delete copy.theme
   delete copy.keybinds
   delete copy.tui
-  log.warn("tui keys in opencode config are deprecated; move them to tui.json", { path: source })
+  log.warn(`tui keys in ${Brand.display} config are deprecated; move them to tui.json`, { path: source })
   return copy
 }
 
@@ -141,10 +142,10 @@ export const Info = Schema.Struct({
   }),
   logLevel: Schema.optional(LogLevelRef).annotate({ description: "Log level" }),
   server: Schema.optional(ConfigServer.Server).annotate({
-    description: "Server configuration for opencode serve and web commands",
+    description: `Server configuration for ${Brand.command} serve and web commands`,
   }),
   command: Schema.optional(Schema.Record(Schema.String, ConfigCommand.Info)).annotate({
-    description: "Command configuration, see https://opencode.ai/docs/commands",
+    description: `Command configuration, see ${Brand.docsURL}/commands`,
   }),
   skills: Schema.optional(ConfigSkills.Info).annotate({ description: "Additional skill folder paths" }),
   reference: Schema.optional(ConfigReference.Info).annotate({
@@ -220,7 +221,7 @@ export const Info = Schema.Struct({
       }),
       [Schema.Record(Schema.String, ConfigAgent.Info)],
     ),
-  ).annotate({ description: "Agent configuration, see https://opencode.ai/docs/agents" }),
+  ).annotate({ description: `Agent configuration, see ${Brand.docsURL}/agents` }),
   provider: Schema.optional(Schema.Record(Schema.String, ConfigProvider.Info)).annotate({
     description: "Custom provider configurations and model overrides",
   }),
@@ -344,9 +345,13 @@ export class Service extends Context.Service<Service, Interface>()("@opencode/Co
 export const use = serviceUse(Service)
 
 function globalConfigFile() {
-  const candidates = ["entrox.jsonc", "entrox.json", "opencode.jsonc", "opencode.json", "config.json"].map((file) =>
-    path.join(Global.Path.config, file),
-  )
+  const candidates = [
+    `${Brand.configBase}.jsonc`,
+    `${Brand.configBase}.json`,
+    `${Brand.legacyConfigBase}.jsonc`,
+    `${Brand.legacyConfigBase}.json`,
+    "config.json",
+  ].map((file) => path.join(Global.Path.config, file))
   for (const file of candidates) {
     if (existsSync(file)) return file
   }
@@ -433,8 +438,8 @@ export const layer = Layer.effect(
 
       yield* Effect.promise(() => resolveLoadedPlugins(data, options.path))
       if (!data.$schema) {
-        data.$schema = "https://opencode.ai/config.json"
-        const updated = text.replace(/^\s*\{/, '{\n  "$schema": "https://opencode.ai/config.json",')
+        data.$schema = Brand.configSchemaURL
+        const updated = text.replace(/^\s*\{/, `{\n  "$schema": "${Brand.configSchemaURL}",`)
         yield* fs.writeFileString(options.path, updated).pipe(Effect.catch(() => Effect.void))
       }
       return data
@@ -462,15 +467,15 @@ export const layer = Layer.effect(
         const file = globalConfigFile()
         if (!existsSync(file)) {
           yield* fs
-            .writeWithDirs(file, JSON.stringify({ $schema: "https://opencode.ai/config.json" }, null, 2))
+            .writeWithDirs(file, JSON.stringify({ $schema: Brand.configSchemaURL }, null, 2))
             .pipe(Effect.catch(() => Effect.void))
           }
       }
-      for (const file of ConfigPaths.fileInDirectory(Global.LegacyPath.config, "opencode")) {
+      for (const file of ConfigPaths.fileInDirectory(Global.LegacyPath.config, Brand.legacyConfigBase)) {
         result = mergeConfig(result, yield* loadFile(file, env))
       }
       result = mergeConfig(result, yield* loadFile(path.join(Global.Path.config, "config.json"), env))
-      for (const file of ConfigPaths.fileInDirectory(Global.Path.config, "opencode")) {
+      for (const file of ConfigPaths.fileInDirectory(Global.Path.config, Brand.legacyConfigBase)) {
         result = mergeConfig(result, yield* loadFile(file, env))
       }
 
@@ -481,7 +486,7 @@ export const layer = Layer.effect(
             .then(async (mod) => {
               const { provider, model, ...rest } = mod.default
               if (provider && model) result.model = `${provider}/${model}`
-              result["$schema"] = "https://opencode.ai/config.json"
+              result["$schema"] = Brand.configSchemaURL
               result = mergeConfig(result, rest)
               await fsNode.writeFile(path.join(Global.Path.config, "config.json"), JSON.stringify(result, null, 2))
               await fsNode.unlink(legacy)
@@ -572,7 +577,7 @@ export const layer = Layer.effect(
           if (value.type === "wellknown") {
             const url = key.replace(/\/+$/, "")
             authEnv[value.key] = value.token
-            const wellknownURL = `${url}/.well-known/opencode`
+            const wellknownURL = `${url}${Brand.wellKnownPath}`
             log.debug("fetching remote config", { url: wellknownURL })
             const wellknown = yield* fetchRemoteJson(wellknownURL, undefined, WellKnownConfig)
             const remote = yield* Effect.promise(() =>
@@ -595,7 +600,7 @@ export const layer = Layer.effect(
                 })
               : {}
             const remoteConfig = mergeConfig(isRecord(wellknown.config) ? wellknown.config : {}, fetchedConfig)
-            if (!remoteConfig.$schema) remoteConfig.$schema = "https://opencode.ai/config.json"
+            if (!remoteConfig.$schema) remoteConfig.$schema = Brand.configSchemaURL
             const source = wellknownURL
             const next = yield* loadConfig(
               JSON.stringify(remoteConfig),
@@ -620,7 +625,9 @@ export const layer = Layer.effect(
         }
 
         if (!Flag.OPENCODE_DISABLE_PROJECT_CONFIG) {
-          for (const file of yield* ConfigPaths.files("opencode", ctx.directory, ctx.worktree).pipe(Effect.orDie)) {
+          for (const file of yield* ConfigPaths.files(Brand.legacyConfigBase, ctx.directory, ctx.worktree).pipe(
+            Effect.orDie,
+          )) {
             yield* merge(file, yield* loadFile(file, authEnv), "local")
           }
         }
@@ -641,7 +648,7 @@ export const layer = Layer.effect(
 
         for (const dir of directories) {
           if (ConfigPaths.isProjectDirectory(dir) || dir === Flag.ENTROX_CONFIG_DIR || dir === Flag.OPENCODE_CONFIG_DIR) {
-            for (const source of ConfigPaths.fileInDirectory(dir, "opencode")) {
+            for (const source of ConfigPaths.fileInDirectory(dir, Brand.legacyConfigBase)) {
               log.debug(`loading config from ${source}`)
               yield* merge(source, yield* loadFile(source, authEnv))
               result.agent ??= {}
@@ -736,7 +743,7 @@ export const layer = Layer.effect(
 
         const managedDir = ConfigManaged.managedConfigDir()
         if (existsSync(managedDir)) {
-          for (const source of ConfigPaths.fileInDirectory(managedDir, "opencode")) {
+          for (const source of ConfigPaths.fileInDirectory(managedDir, Brand.legacyConfigBase)) {
             yield* merge(source, yield* loadFile(source), "global")
           }
         }

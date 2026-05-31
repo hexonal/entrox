@@ -57,7 +57,7 @@ Exclude:
 - long tutorials or exhaustive file trees
 - obvious language conventions
 - speculative claims or anything you could not verify
-- content better stored in another file referenced via `opencode.json` `instructions`
+- content better stored in another file referenced via `entrox.json` `instructions`
 
 When in doubt, omit.
 

@@ -1,8 +1,14 @@
 import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 import type { InternalTuiPlugin } from "../../plugin/internal"
 import { createMemo, For, Show, createSignal } from "solid-js"
+import { Brand } from "@/brand"
 
 const id = "internal:sidebar-lsp"
+
+export function lspEmptyMessage(enabled: unknown) {
+  if (enabled) return "LSPs will activate as files are read"
+  return `LSPs are disabled. Set "lsp": true in ${Brand.configBase}.json to enable code intelligence.`
+}
 
 function View(props: { api: TuiPluginApi }) {
   const [open, setOpen] = createSignal(true)
@@ -22,7 +28,7 @@ function View(props: { api: TuiPluginApi }) {
       </box>
       <Show when={list().length <= 2 || open()}>
         <Show when={list().length === 0}>
-          <text fg={theme().textMuted}>{off() ? "LSPs are disabled" : "LSPs will activate as files are read"}</text>
+          <text fg={theme().textMuted}>{lspEmptyMessage(!off())}</text>
         </Show>
         <For each={list()}>
           {(item) => (

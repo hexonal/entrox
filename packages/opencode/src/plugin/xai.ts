@@ -3,7 +3,7 @@ import * as Log from "@opencode-ai/core/util/log"
 import { OAUTH_DUMMY_KEY } from "../auth"
 import { createServer } from "http"
 import { InstallationVersion } from "@opencode-ai/core/installation/version"
-import { Brand } from "@/brand"
+import { Brand, brandUserAgent } from "@/brand"
 
 const log = Log.create({ service: "plugin.xai" })
 
@@ -110,7 +110,7 @@ function authHeaders() {
   return {
     "Content-Type": "application/x-www-form-urlencoded",
     Accept: "application/json",
-    "User-Agent": `opencode/${InstallationVersion}`,
+    "User-Agent": brandUserAgent(InstallationVersion),
   }
 }
 
@@ -158,7 +158,7 @@ export function buildAuthorizeUrl(
     state,
     nonce,
     plan: "generic",
-    referrer: "opencode",
+    referrer: Brand.userAgentProduct,
   })
   return `${options.authorizeUrl ?? AUTHORIZE_URL}?${params.toString()}`
 }
@@ -656,7 +656,7 @@ export async function XaiAuthPlugin(input: PluginInput, options: XaiAuthPluginOp
               }
             }
             headers.set("authorization", `Bearer ${currentAuth.access}`)
-            headers.set("User-Agent", `opencode/${InstallationVersion}`)
+            headers.set("User-Agent", brandUserAgent(InstallationVersion))
 
             return fetch(requestInput, { ...init, headers })
           },

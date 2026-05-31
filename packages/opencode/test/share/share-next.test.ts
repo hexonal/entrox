@@ -19,6 +19,7 @@ import { eq } from "drizzle-orm"
 import { provideTmpdirInstance } from "../fixture/fixture"
 import { resetDatabase } from "../fixture/db"
 import { testEffect } from "../lib/effect"
+import { Brand } from "@/brand"
 
 const env = Layer.mergeAll(
   Session.defaultLayer,
@@ -126,7 +127,7 @@ describe("ShareNext", () => {
         Effect.gen(function* () {
           const req = yield* svc.request()
 
-          expect(req.baseUrl).toBe("https://opncd.ai")
+          expect(req.baseUrl).toBe(Brand.shareBaseURL)
           expect(req.api.create).toBe("/api/share")
           expect(req.headers).toEqual({})
         }),

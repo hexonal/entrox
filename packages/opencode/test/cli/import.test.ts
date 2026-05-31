@@ -5,18 +5,21 @@ import {
   transformShareData,
   type ShareData,
 } from "../../src/cli/cmd/import"
+import { Brand } from "../../src/brand"
 
 // parseShareUrl tests
 test("parses valid share URLs", () => {
-  expect(parseShareUrl("https://opncd.ai/share/Jsj3hNIW")).toBe("Jsj3hNIW")
+  expect(parseShareUrl(`${Brand.shareBaseURL}/share/Jsj3hNIW`)).toBe("Jsj3hNIW")
+  expect(parseShareUrl(`${Brand.shareBaseURL}/s/Jsj3hNIW`)).toBe("Jsj3hNIW")
   expect(parseShareUrl("https://custom.example.com/share/abc123")).toBe("abc123")
+  expect(parseShareUrl("https://custom.example.com/s/abc123")).toBe("abc123")
   expect(parseShareUrl("http://localhost:3000/share/test_id-123")).toBe("test_id-123")
 })
 
 test("rejects invalid URLs", () => {
-  expect(parseShareUrl("https://opncd.ai/s/Jsj3hNIW")).toBeNull() // legacy format
-  expect(parseShareUrl("https://opncd.ai/share/")).toBeNull()
-  expect(parseShareUrl("https://opncd.ai/share/id/extra")).toBeNull()
+  expect(parseShareUrl(`${Brand.shareBaseURL}/share/`)).toBeNull()
+  expect(parseShareUrl(`${Brand.shareBaseURL}/s/`)).toBeNull()
+  expect(parseShareUrl(`${Brand.shareBaseURL}/share/id/extra`)).toBeNull()
   expect(parseShareUrl("not-a-url")).toBeNull()
 })
 

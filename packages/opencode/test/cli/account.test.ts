@@ -1,11 +1,12 @@
 import { describe, expect, test } from "bun:test"
 import stripAnsi from "strip-ansi"
 
+import { Brand } from "../../src/brand"
 import { defaultConsoleUrl, formatAccountLabel, formatOrgLine } from "../../src/cli/cmd/account"
 
 describe("console account display", () => {
-  test("uses console.opencode.ai as the default login URL", () => {
-    expect(defaultConsoleUrl).toBe("https://console.opencode.ai")
+  test("uses the branded app URL as the default login URL", () => {
+    expect(defaultConsoleUrl).toBe(Brand.appURL)
   })
 
   test("includes the account url in account labels", () => {

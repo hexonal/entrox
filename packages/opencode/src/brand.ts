@@ -14,6 +14,24 @@ export const Brand = {
   userAgentProduct: "entrox",
   defaultSoundPack: "entrox.default",
   authProviderURL: "https://entrox.996icu.wiki",
+  websiteURL: "https://entrox.996icu.wiki",
+  docsURL: "https://entrox.996icu.wiki/docs",
+  authURL: "https://entrox.996icu.wiki/auth",
+  apiURL: "https://api.entrox.996icu.wiki",
+  appURL: "https://app.entrox.996icu.wiki",
+  configSchemaURL: "https://entrox.996icu.wiki/config.json",
+  themeSchemaURL: "https://entrox.996icu.wiki/theme.json",
+  installURL: "https://entrox.996icu.wiki/install",
+  releaseRepository: "hexonal/entrox",
+  issueURL: "https://entrox.996icu.wiki/support",
+  githubAgentUsername: "entrox-agent[bot]",
+  githubWorkflowFile: ".github/workflows/entrox.yml",
+  githubAction: "hexonal/entrox/github@latest",
+  githubAppURL: "https://github.com/apps/entrox-agent",
+  githubCommentMentions: "/entrox,/ex",
+  shareBaseURL: "https://share.entrox.996icu.wiki",
+  socialCardBaseURL: "https://entrox.996icu.wiki/social-card",
+  wellKnownPath: "/.well-known/opencode",
   legacyCommand: "opencode",
   legacyPackageName: "opencode",
   legacyNpmPackageName: "opencode-ai",
@@ -24,3 +42,7 @@ export const Brand = {
   legacyMdnsDefault: "opencode.local",
   legacyDefaultSoundPack: "opencode.default",
 } as const
+
+export function brandUserAgent(version: string, suffix?: string) {
+  return [Brand.userAgentProduct + "/" + version, suffix].filter(Boolean).join(" ")
+}

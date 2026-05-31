@@ -803,7 +803,7 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
         name: "docs.open",
         title: "Open docs",
         run: () => {
-          open("https://opencode.ai/docs").catch(() => {})
+          open(Brand.docsURL).catch(() => {})
           dialog.clear()
         },
         category: "System",

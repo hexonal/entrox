@@ -139,9 +139,8 @@ describe("installation", () => {
       testLayer(
         () => jsonResponse({ versions: { stable: "2.0.0" } }),
         (cmd, args) => {
-          // getBrewFormula: return core formula (no tap)
-          if (cmd === "brew" && args.includes("--formula") && args.includes("anomalyco/tap/opencode")) return ""
-          if (cmd === "brew" && args.includes("--formula") && args.includes("opencode")) return "opencode"
+          // getBrewFormula: resolve the branded formula without probing upstream taps.
+          if (cmd === "brew" && args.includes("--formula") && args.includes(Brand.packageName)) return Brand.packageName
           return ""
         },
       ),
@@ -152,22 +151,20 @@ describe("installation", () => {
       }),
     )
 
-    const brewInfoJson = JSON.stringify({
-      formulae: [{ versions: { stable: "2.1.0" } }],
-    })
+    const brewCalls: string[] = []
     testEffect(
       testLayer(
-        () => jsonResponse({}), // HTTP not used for tap formula
+        () => jsonResponse({ versions: { stable: "2.1.0" } }),
         (cmd, args) => {
-          if (cmd === "brew" && args.includes("anomalyco/tap/opencode") && args.includes("--formula")) return "opencode"
-          if (cmd === "brew" && args.includes("--json=v2")) return brewInfoJson
+          if (cmd === "brew") brewCalls.push(args.join(" "))
           return ""
         },
       ),
-    ).effect("reads brew tap info JSON via CLI", () =>
+    ).effect("does not probe upstream brew taps while resolving versions", () =>
       Effect.gen(function* () {
         const result = yield* Installation.use.latest("brew")
         expect(result).toBe("2.1.0")
+        expect(brewCalls.some((call) => call.includes("anomalyco") || call.includes("opencode"))).toBe(false)
       }),
     )
   })

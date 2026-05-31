@@ -245,7 +245,7 @@ const TIPS: Tip[] = [
   `Run {highlight}${Brand.command} auth list{/highlight} to see all configured providers`,
   `Run {highlight}${Brand.command} agent create{/highlight} for guided agent creation`,
   "Use GitHub integration commands after configuring the workflow",
-  "Comment {highlight}/oc{/highlight} on PR code lines for targeted code reviews",
+  "Comment {highlight}/entrox{/highlight} on PR code lines for targeted code reviews",
   'Use {highlight}"theme": "system"{/highlight} to match your terminal\'s colors',
   `Create JSON theme files in {highlight}${Brand.projectDirectory}/themes/{/highlight} directory`,
   "Themes support dark/light variants for both modes",

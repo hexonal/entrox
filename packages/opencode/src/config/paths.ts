@@ -6,6 +6,7 @@ import { Global } from "@opencode-ai/core/global"
 import { unique } from "remeda"
 import * as Effect from "effect/Effect"
 import { AppFileSystem } from "@opencode-ai/core/filesystem"
+import { Brand } from "@/brand"
 
 export const files = Effect.fn("ConfigPaths.projectFiles")(function* (
   name: string,
@@ -27,13 +28,13 @@ export const directories = Effect.fn("ConfigPaths.directories")(function* (direc
     Global.LegacyPath.config,
     ...(!Flag.OPENCODE_DISABLE_PROJECT_CONFIG
       ? yield* afs.up({
-          targets: [".entrox", ".opencode"],
+          targets: [Brand.projectDirectory, Brand.legacyProjectDirectory],
           start: directory,
           stop: worktree,
         })
       : []),
     ...(yield* afs.up({
-      targets: [".entrox", ".opencode"],
+      targets: [Brand.projectDirectory, Brand.legacyProjectDirectory],
       start: Global.Path.home,
       stop: Global.Path.home,
     })),
@@ -47,7 +48,7 @@ export function fileInDirectory(dir: string, name: string) {
 }
 
 export function projectDirectoryNames() {
-  return [".entrox", ".opencode"]
+  return [Brand.projectDirectory, Brand.legacyProjectDirectory]
 }
 
 export function isProjectDirectory(dir: string) {
@@ -55,11 +56,23 @@ export function isProjectDirectory(dir: string) {
 }
 
 function fileNames(name: string) {
-  if (name === "opencode") return ["entrox.json", "entrox.jsonc", "opencode.json", "opencode.jsonc"]
+  if (name === Brand.legacyConfigBase)
+    return [
+      `${Brand.configBase}.json`,
+      `${Brand.configBase}.jsonc`,
+      `${Brand.legacyConfigBase}.json`,
+      `${Brand.legacyConfigBase}.jsonc`,
+    ]
   return [`${name}.json`, `${name}.jsonc`]
 }
 
 function projectTargets(name: string) {
-  if (name === "opencode") return ["entrox.jsonc", "entrox.json", "opencode.jsonc", "opencode.json"]
+  if (name === Brand.legacyConfigBase)
+    return [
+      `${Brand.configBase}.jsonc`,
+      `${Brand.configBase}.json`,
+      `${Brand.legacyConfigBase}.jsonc`,
+      `${Brand.legacyConfigBase}.json`,
+    ]
   return [`${name}.jsonc`, `${name}.json`]
 }
