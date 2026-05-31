@@ -686,6 +686,18 @@ it.instance("handles command configuration", () =>
   }),
 )
 
+it.instance("handles review model configuration", () =>
+  Effect.gen(function* () {
+    const test = yield* TestInstance
+    yield* writeConfigEffect(test.directory, {
+      $schema: "https://opencode.ai/config.json",
+      review_model: "openai/gpt-5.4",
+    })
+    const config = yield* Config.use.get()
+    expect(config.review_model).toBe("openai/gpt-5.4")
+  }),
+)
+
 it.instance("migrates autoshare to share field", () =>
   Effect.gen(function* () {
     const test = yield* TestInstance
