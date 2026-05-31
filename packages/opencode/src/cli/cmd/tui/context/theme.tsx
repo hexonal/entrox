@@ -110,7 +110,6 @@ export const DEFAULT_THEMES: Record<string, ThemeJson> = {
   ["one-dark"]: onedark,
   ["osaka-jade"]: osakaJade,
   [Brand.name]: opencode,
-  opencode,
   orng,
   ["lucent-orng"]: lucentOrng,
   palenight,
@@ -166,6 +165,10 @@ export function allThemes() {
   return store.themes
 }
 
+function normalizeThemeName(name: string) {
+  return name === Brand.legacyCommand ? Brand.name : name
+}
+
 function isTheme(theme: unknown): theme is ThemeJson {
   if (!isRecord(theme)) return false
   if (!isRecord(theme.theme)) return false
@@ -174,14 +177,15 @@ function isTheme(theme: unknown): theme is ThemeJson {
 
 export function hasTheme(name: string) {
   if (!name) return false
-  return allThemes()[name] !== undefined
+  return allThemes()[normalizeThemeName(name)] !== undefined
 }
 
 export function addTheme(name: string, theme: unknown) {
   if (!name) return false
   if (!isTheme(theme)) return false
-  if (hasTheme(name)) return false
-  pluginThemes[name] = theme
+  const normalized = normalizeThemeName(name)
+  if (hasTheme(normalized)) return false
+  pluginThemes[normalized] = theme
   syncThemes()
   return true
 }
@@ -189,10 +193,11 @@ export function addTheme(name: string, theme: unknown) {
 export function upsertTheme(name: string, theme: unknown) {
   if (!name) return false
   if (!isTheme(theme)) return false
-  if (customThemes[name] !== undefined) {
-    customThemes[name] = theme
+  const normalized = normalizeThemeName(name)
+  if (customThemes[normalized] !== undefined) {
+    customThemes[normalized] = theme
   } else {
-    pluginThemes[name] = theme
+    pluginThemes[normalized] = theme
   }
   syncThemes()
   return true
@@ -324,14 +329,14 @@ export const { use: useTheme, provider: ThemeProvider } = createSimpleContext({
         draft.mode = mode
         draft.lock = lock
         const active = config.theme ?? kv.get("theme", Brand.name)
-        draft.active = typeof active === "string" ? active : Brand.name
+        draft.active = typeof active === "string" ? normalizeThemeName(active) : Brand.name
         draft.ready = false
       }),
     )
 
     createEffect(() => {
       const theme = config.theme
-      if (theme) setStore("active", theme)
+      if (theme) setStore("active", normalizeThemeName(theme))
     })
 
     function init() {
@@ -425,13 +430,13 @@ export const { use: useTheme, provider: ThemeProvider } = createSimpleContext({
 
       const saved = kv.get("theme")
       if (typeof saved === "string") {
-        const theme = store.themes[saved]
+        const theme = store.themes[normalizeThemeName(saved)]
         if (theme) {
           return resolveTheme(theme, store.mode)
         }
       }
 
-      return resolveTheme(store.themes[Brand.name] ?? store.themes.opencode, store.mode)
+      return resolveTheme(store.themes[Brand.name]!, store.mode)
     })
 
     createEffect(() => {
@@ -475,9 +480,10 @@ export const { use: useTheme, provider: ThemeProvider } = createSimpleContext({
         pin(mode)
       },
       set(theme: string) {
-        if (!hasTheme(theme)) return false
-        setStore("active", theme)
-        kv.set("theme", theme)
+        const normalized = normalizeThemeName(theme)
+        if (!hasTheme(normalized)) return false
+        setStore("active", normalized)
+        kv.set("theme", normalized)
         return true
       },
       get ready() {

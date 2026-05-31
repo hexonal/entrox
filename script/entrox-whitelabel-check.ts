@@ -33,6 +33,7 @@ const scanGlobs = [
   "SECURITY.md",
   "install",
   "specs/entrox-login-todo.md",
+  "specs/entrox-upstream-merge.md",
 ] as const
 
 const ignoredPathParts = [
@@ -40,9 +41,14 @@ const ignoredPathParts = [
   "/.turbo/",
   "/out/",
   "/node_modules/",
+  // These upstream-maintained source dictionaries/assets are branded by runtime helpers or build output rewrites.
   "/packages/app/src/i18n/",
   "/packages/console/app/src/i18n/",
   "/packages/desktop/src/renderer/i18n/",
+  "/packages/ui/src/i18n/",
+  "/packages/web/src/content/i18n/",
+  "/packages/ui/src/theme/themes/",
+  "/packages/opencode/src/cli/cmd/tui/context/theme/",
 ] as const
 
 const rules: Rule[] = [

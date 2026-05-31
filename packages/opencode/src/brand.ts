@@ -46,3 +46,30 @@ export const Brand = {
 export function brandUserAgent(version: string, suffix?: string) {
   return [Brand.userAgentProduct + "/" + version, suffix].filter(Boolean).join(" ")
 }
+
+const textReplacements: Array<[RegExp, string]> = [
+  [/\bOpenCode Zen\b/g, Brand.product],
+  [/\bOpenCode Go\b/g, `${Brand.product} Go`],
+  [/https?:\/\/github\.com\/anomalyco\/opencode\/issues\b/g, Brand.issueURL],
+  [/https?:\/\/github\.com\/anomalyco\/opencode\b/g, `https://github.com/${Brand.releaseRepository}`],
+  [/https?:\/\/opencode\.ai\/install\b/g, Brand.installURL],
+  [/https?:\/\/opencode\.ai\/docs\b/g, Brand.docsURL],
+  [/https?:\/\/opencode\.ai\/auth\b/g, Brand.authURL],
+  [/https?:\/\/opencode\.ai\/zen\b/g, Brand.authURL],
+  [/https?:\/\/opencode\.ai\b/g, Brand.websiteURL],
+  [/\bopencode\.ai\/install\b/g, `${new URL(Brand.installURL).host}/install`],
+  [/\bopencode\.ai\/docs\b/g, `${new URL(Brand.docsURL).host}/docs`],
+  [/\bopencode\.ai\/auth\b/g, `${new URL(Brand.authURL).host}/auth`],
+  [/\bopencode\.ai\/zen\b/g, `${new URL(Brand.authURL).host}/auth`],
+  [/\bopencode\.ai\b/g, new URL(Brand.websiteURL).host],
+  [/\banomalyco\/opencode\b/g, Brand.releaseRepository],
+  [/\bOpenCode\b/g, Brand.product],
+  [/\bopencode\.jsonc\b/g, `${Brand.configBase}.jsonc`],
+  [/\bopencode\.json\b/g, `${Brand.configBase}.json`],
+  [/\.opencode\b/g, Brand.projectDirectory],
+  [/(?<![@A-Za-z0-9_-])opencode(?![A-Za-z0-9_-])/g, Brand.command],
+]
+
+export function brandText(value: string) {
+  return textReplacements.reduce((result, [pattern, replacement]) => result.replace(pattern, replacement), value)
+}

@@ -1,6 +1,6 @@
 {
-  "$schema": "https://entrox.996icu.wiki/desktop-theme.json",
-  "name": "Entrox",
+  "$schema": "https://opencode.ai/desktop-theme.json",
+  "name": "OpenCode",
   "id": "opencode",
   "light": {
     "palette": {

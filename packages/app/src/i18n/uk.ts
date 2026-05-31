@@ -136,11 +136,11 @@ export const dict = {
   "provider.connect.apiKey.placeholder": "Ключ API",
   "provider.connect.apiKey.required": "Ключ API обов'язковий",
   "provider.connect.opencodeZen.line1":
-    "Entrox надає доступ до відібраного набору надійних оптимізованих моделей для агентів кодування.",
+    "OpenCode Zen надає доступ до відібраного набору надійних оптимізованих моделей для агентів кодування.",
   "provider.connect.opencodeZen.line2":
     "З одним ключем API ви отримаєте доступ до таких моделей, як Claude, GPT, Gemini, GLM та інших.",
   "provider.connect.opencodeZen.visit.prefix": "Відвідайте ",
-  "provider.connect.opencodeZen.visit.link": "Entrox",
+  "provider.connect.opencodeZen.visit.link": "opencode.ai/zen",
   "provider.connect.opencodeZen.visit.suffix": ", щоб отримати ключ API.",
   "provider.connect.oauth.code.visit.prefix": "Відвідайте ",
   "provider.connect.oauth.code.visit.link": "це посилання",

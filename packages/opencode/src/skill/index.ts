@@ -16,6 +16,7 @@ import * as Log from "@opencode-ai/core/util/log"
 import { Discovery } from "./discovery"
 import CUSTOMIZE_OPENCODE_SKILL_BODY from "./prompt/customize-opencode.md" with { type: "text" }
 import { isRecord } from "@/util/record"
+import { brandText } from "@/brand"
 
 const log = Log.create({ service: "skill" })
 const CLAUDE_EXTERNAL_DIR = ".claude"
@@ -279,7 +280,7 @@ export const layer = Layer.effect(
           name: CUSTOMIZE_OPENCODE_SKILL_NAME,
           description: CUSTOMIZE_OPENCODE_SKILL_DESCRIPTION,
           location: "<built-in>",
-          content: CUSTOMIZE_OPENCODE_SKILL_BODY,
+          content: brandText(CUSTOMIZE_OPENCODE_SKILL_BODY),
         }
         yield* loadSkills(s, yield* InstanceState.get(discovered), events)
         return s

@@ -308,7 +308,7 @@ export const { use: useTheme, provider: ThemeProvider } = createSimpleContext({
       colorScheme: () => store.colorScheme,
       mode: () => store.mode,
       ids,
-      name: (id: string) => store.themes[id]?.name ?? names[id] ?? id,
+      name: (id: string) => names[id] ?? store.themes[id]?.name ?? id,
       loadThemes,
       themes: () => store.themes,
       setTheme,

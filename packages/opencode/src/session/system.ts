@@ -15,21 +15,22 @@ import type { Provider } from "@/provider/provider"
 import type { Agent } from "@/agent/agent"
 import { Permission } from "@/permission"
 import { Skill } from "@/skill"
+import { brandText } from "@/brand"
 
 export function provider(model: Provider.Model) {
   if (model.api.id.includes("gpt-4") || model.api.id.includes("o1") || model.api.id.includes("o3"))
-    return [PROMPT_BEAST]
+    return [brandText(PROMPT_BEAST)]
   if (model.api.id.includes("gpt")) {
     if (model.api.id.includes("codex")) {
-      return [PROMPT_CODEX]
+      return [brandText(PROMPT_CODEX)]
     }
-    return [PROMPT_GPT]
+    return [brandText(PROMPT_GPT)]
   }
-  if (model.api.id.includes("gemini-")) return [PROMPT_GEMINI]
-  if (model.api.id.includes("claude")) return [PROMPT_ANTHROPIC]
-  if (model.api.id.toLowerCase().includes("trinity")) return [PROMPT_TRINITY]
-  if (model.api.id.toLowerCase().includes("kimi")) return [PROMPT_KIMI]
-  return [PROMPT_DEFAULT]
+  if (model.api.id.includes("gemini-")) return [brandText(PROMPT_GEMINI)]
+  if (model.api.id.includes("claude")) return [brandText(PROMPT_ANTHROPIC)]
+  if (model.api.id.toLowerCase().includes("trinity")) return [brandText(PROMPT_TRINITY)]
+  if (model.api.id.toLowerCase().includes("kimi")) return [brandText(PROMPT_KIMI)]
+  return [brandText(PROMPT_DEFAULT)]
 }
 
 export interface Interface {
