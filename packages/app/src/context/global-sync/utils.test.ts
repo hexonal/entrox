@@ -36,8 +36,8 @@ describe("normalizeAgentList", () => {
 
 describe("directoryKey", () => {
   test("normalizes slashes", () => {
-    expect(String(directoryKey("C:\\Repos\\sst\\opencode"))).toBe("C:/Repos/sst/opencode")
-    expect(String(directoryKey("C:/Repos/sst/opencode"))).toBe("C:/Repos/sst/opencode")
+    expect(String(directoryKey("C:\\Repos\\hexonal\\entrox"))).toBe("C:/Repos/hexonal/entrox")
+    expect(String(directoryKey("C:/Repos/hexonal/entrox"))).toBe("C:/Repos/hexonal/entrox")
   })
 
   test("preserves backslashes in posix paths", () => {

@@ -2,6 +2,7 @@
 import { Base64 } from "js-base64";
 import Default from '@astrojs/starlight/components/Head.astro'
 import config from '../../config.mjs'
+import { brandPublicText } from '../brand.mjs'
 
 const base = import.meta.env.BASE_URL.replace(/^\//, "").replace(/\/$/, "")
 
@@ -17,6 +18,8 @@ const titleSuffix = t("app.head.titleSuffix")
 const shareSlug = base === "" ? "s" : `${base}/s`
 const isShare = slug === shareSlug || slug.startsWith(`${shareSlug}/`)
 const isHome = slug === "" || slug === base
+const publicTitle = brandPublicText(title)
+const publicDescription = description ? brandPublicText(description) : ""
 
 let encodedTitle = '';
 let ogImage = `${config.url}/social-share.png`;
@@ -29,16 +32,16 @@ if (isDocs) {
       // Convert to ASCII
       encodeURIComponent(
         // Truncate to fit S3's max key size
-        title.substring(0, 700)
+        publicTitle.substring(0, 700)
       )
     )
   );
 
-  if (description) {
-    truncatedDesc = encodeURIComponent(description.substring(0, 400))
+  if (publicDescription) {
+    truncatedDesc = encodeURIComponent(publicDescription.substring(0, 400))
   }
 
-  ogImage = `${config.socialCard}/opencode-docs/${encodedTitle}.png?desc=${truncatedDesc}`;
+  ogImage = `${config.socialCard}/entrox-docs/${encodedTitle}.png?desc=${truncatedDesc}`;
 }
 ---
 

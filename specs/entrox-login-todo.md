@@ -35,15 +35,23 @@ credential automatically.
 ## Upstream Merge Guardrails
 
 - Keep Entrox branding centralized in `packages/opencode/src/brand.ts`; prefer changing `Brand` values over broad source rewrites.
+- Keep GUI/runtime branding centralized in `packages/app/src/brand.ts`; translated UI strings are branded at `t()` output time instead of editing every locale file.
+- Keep docs branding centralized in `packages/web/src/brand.mjs`; the Astro build applies it at render/output time instead of editing localized MDX docs.
 - Keep protocol and compatibility surfaces stable: `/.well-known/opencode`, `x-opencode-*`, `@opencode-ai/*`, provider IDs, legacy env names, and legacy config paths.
-- Avoid renaming upstream-owned files unless the filename itself is user-facing. Local wrapper files such as `bin/entrox` are fine.
-- After each upstream merge, run the white-label scan, typecheck, targeted tests, and a single binary build before pushing.
+- Keep `opencode://` deep links readable while adding `entrox://`, so existing upstream integrations do not break.
+- Avoid renaming upstream-owned files unless the filename itself is user-facing. Local wrapper files such as `bin/entrox` and release artifacts are fine.
+- After each upstream merge, run `bun run check:whitelabel`, typecheck, targeted tests, and a single binary build before pushing.
 
 ## Repository / Docs White-Label Backlog
 
 - [x] Replace the default root `README.md` with an Entrox-facing overview.
 - [x] Replace root `SECURITY.md` with Entrox-facing security guidance.
 - [x] Repoint the root `install` script to Entrox names and release URLs.
-- [ ] White-label localized `README.*.md` files, or remove them from the fork if they are not maintained.
-- [ ] White-label `packages/web/src/content/docs/**` before publishing the docs site.
-- [ ] Replace remaining website/desktop logo assets before shipping those artifacts.
+- [x] White-label desktop/package metadata, desktop menu labels, feedback/docs links, and website install entrypoints.
+- [x] Add runtime i18n branding at translation output time so GUI translations display Entrox without rewriting every locale file.
+- [x] White-label publish workflow artifact names, desktop sidecar artifact names, AUR/Homebrew/Docker release metadata, and npm package metadata.
+- [x] White-label UI theme/schema metadata and website locale captions covered by the built public surfaces.
+- [x] Add `bun run check:whitelabel` to catch upstream brand regressions after merges.
+- [x] Remove localized `README.*.md` files from the fork so stale upstream branding is not published or maintained.
+- [x] White-label docs build output without rewriting `packages/web/src/content/docs/**`.
+- [x] Replace website/desktop wordmark assets with Entrox-facing logo output.

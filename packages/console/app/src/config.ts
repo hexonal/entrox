@@ -1,13 +1,15 @@
+import { publicBrand } from "~/lib/brand"
+
 /**
  * Application-wide constants and configuration
  */
 export const config = {
   // Base URL
-  baseUrl: "https://opencode.ai",
+  baseUrl: publicBrand.websiteURL,
 
   // GitHub
   github: {
-    repoUrl: "https://github.com/anomalyco/opencode",
+    repoUrl: publicBrand.repositoryURL,
     starsFormatted: {
       compact: "160K",
       full: "160,000",
@@ -16,8 +18,8 @@ export const config = {
 
   // Social links
   social: {
-    twitter: "https://x.com/opencode",
-    discord: "https://discord.gg/opencode",
+    twitter: publicBrand.xURL,
+    discord: publicBrand.discordURL,
   },
 
   // Static stats (used on landing page)

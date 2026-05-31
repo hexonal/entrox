@@ -7,6 +7,7 @@ import IMG_SPLASH from "../asset/lander/screenshot-splash.png"
 import { IconCopy, IconCheck } from "../component/icon"
 import { useI18n } from "~/context/i18n"
 import { useLanguage } from "~/context/language"
+import { publicBrand } from "~/lib/brand"
 
 function CopyStatus() {
   return (
@@ -67,7 +68,7 @@ export default function Home() {
               <span>
                 <span>curl -fsSL </span>
                 <span data-slot="protocol">https://</span>
-                <span data-slot="highlight">opencode.ai/install</span>
+                <span data-slot="highlight">{publicBrand.domain}/install</span>
                 <span> | bash</span>
               </span>
               <CopyStatus />
@@ -113,7 +114,7 @@ export default function Home() {
             <h3 data-component="title">npm</h3>
             <button data-copy data-slot="button">
               <span>
-                npm install -g <strong>opencode-ai</strong>
+                npm install -g <strong>{publicBrand.packageName}</strong>
               </span>
               <CopyStatus />
             </button>
@@ -122,7 +123,7 @@ export default function Home() {
             <h3 data-component="title">bun</h3>
             <button data-copy data-slot="button">
               <span>
-                bun install -g <strong>opencode-ai</strong>
+                bun install -g <strong>{publicBrand.packageName}</strong>
               </span>
               <CopyStatus />
             </button>
@@ -131,7 +132,7 @@ export default function Home() {
             <h3 data-component="title">homebrew</h3>
             <button data-copy data-slot="button">
               <span>
-                brew install <strong>opencode</strong>
+                brew install <strong>{publicBrand.command}</strong>
               </span>
               <CopyStatus />
             </button>
@@ -140,7 +141,7 @@ export default function Home() {
             <h3 data-component="title">paru</h3>
             <button data-copy data-slot="button">
               <span>
-                paru -S <strong>opencode-bin</strong>
+                paru -S <strong>{publicBrand.command}-bin</strong>
               </span>
               <CopyStatus />
             </button>
@@ -158,20 +159,20 @@ export default function Home() {
 
         <footer data-component="footer">
           <div data-slot="cell">
-            <a href="https://x.com/opencode">{i18n.t("footer.x")}</a>
+            <a href={publicBrand.xURL}>{i18n.t("footer.x")}</a>
           </div>
           <div data-slot="cell">
-            <a href="https://github.com/anomalyco/opencode">{i18n.t("footer.github")}</a>
+            <a href={publicBrand.repositoryURL}>{i18n.t("footer.github")}</a>
           </div>
           <div data-slot="cell">
-            <a href="https://opencode.ai/discord">{i18n.t("footer.discord")}</a>
+            <a href={publicBrand.discordURL}>{i18n.t("footer.discord")}</a>
           </div>
         </footer>
       </div>
 
       <div data-component="legal">
         <span>
-          ©2025 <a href="https://anoma.ly">Anomaly</a>
+          ©2025 <a href="https://entrox.996icu.wiki">Hexonal</a>
         </span>
       </div>
     </main>

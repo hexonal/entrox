@@ -30,6 +30,7 @@ const session = (input: Partial<Session> & Pick<Session, "id" | "directory">) =>
 
 describe("layout deep links", () => {
   test("parses open-project deep links", () => {
+    expect(parseDeepLink("entrox://open-project?directory=/tmp/demo")).toBe("/tmp/demo")
     expect(parseDeepLink("opencode://open-project?directory=/tmp/demo")).toBe("/tmp/demo")
   })
 
@@ -69,6 +70,7 @@ describe("layout deep links", () => {
   })
 
   test("parses new-session deep links with optional prompt", () => {
+    expect(parseNewSessionDeepLink("entrox://new-session?directory=/tmp/demo")).toEqual({ directory: "/tmp/demo" })
     expect(parseNewSessionDeepLink("opencode://new-session?directory=/tmp/demo")).toEqual({ directory: "/tmp/demo" })
     expect(parseNewSessionDeepLink("opencode://new-session?directory=/tmp/demo&prompt=hello%20world")).toEqual({
       directory: "/tmp/demo",

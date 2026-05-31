@@ -8,6 +8,10 @@ import type { Configuration } from "electron-builder"
 const execFileAsync = promisify(execFile)
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const signScript = path.join(rootDir, "script", "sign-windows.ps1")
+const product = "Entrox"
+const packageName = "entrox"
+const appId = "wiki.996icu.entrox.desktop"
+const publishOwner = "hexonal"
 
 async function signWindows(configuration: { path: string }) {
   if (process.platform !== "win32") return
@@ -27,7 +31,7 @@ const channel = (() => {
 })()
 
 const getBase = (): Configuration => ({
-  artifactName: "opencode-desktop-${os}-${arch}.${ext}",
+  artifactName: "entrox-desktop-${os}-${arch}.${ext}",
   directories: {
     output: "dist",
     buildResources: "resources",
@@ -54,8 +58,8 @@ const getBase = (): Configuration => ({
     sign: true,
   },
   protocols: {
-    name: "OpenCode",
-    schemes: ["opencode"],
+    name: product,
+    schemes: ["entrox", "opencode"],
   },
   win: {
     icon: `resources/icons/icon.ico`,
@@ -85,29 +89,29 @@ function getConfig() {
     case "dev": {
       return {
         ...base,
-        appId: "ai.opencode.desktop.dev",
-        productName: "OpenCode Dev",
-        rpm: { packageName: "opencode-dev" },
+        appId: `${appId}.dev`,
+        productName: `${product} Dev`,
+        rpm: { packageName: `${packageName}-dev` },
       }
     }
     case "beta": {
       return {
         ...base,
-        appId: "ai.opencode.desktop.beta",
-        productName: "OpenCode Beta",
-        protocols: { name: "OpenCode Beta", schemes: ["opencode"] },
-        publish: { provider: "github", owner: "anomalyco", repo: "opencode-beta", channel: "latest" },
-        rpm: { packageName: "opencode-beta" },
+        appId: `${appId}.beta`,
+        productName: `${product} Beta`,
+        protocols: { name: `${product} Beta`, schemes: ["entrox", "opencode"] },
+        publish: { provider: "github", owner: publishOwner, repo: `${packageName}-beta`, channel: "latest" },
+        rpm: { packageName: `${packageName}-beta` },
       }
     }
     case "prod": {
       return {
         ...base,
-        appId: "ai.opencode.desktop",
-        productName: "OpenCode",
-        protocols: { name: "OpenCode", schemes: ["opencode"] },
-        publish: { provider: "github", owner: "anomalyco", repo: "opencode", channel: "latest" },
-        rpm: { packageName: "opencode" },
+        appId,
+        productName: product,
+        protocols: { name: product, schemes: ["entrox", "opencode"] },
+        publish: { provider: "github", owner: publishOwner, repo: packageName, channel: "latest" },
+        rpm: { packageName },
       }
     }
   }

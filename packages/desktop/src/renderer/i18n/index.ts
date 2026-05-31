@@ -33,6 +33,7 @@ import { dict as appAr } from "../../../../app/src/i18n/ar"
 import { dict as appNo } from "../../../../app/src/i18n/no"
 import { dict as appBr } from "../../../../app/src/i18n/br"
 import { dict as appBs } from "../../../../app/src/i18n/bs"
+import { brandText } from "../../../../app/src/brand"
 
 export type Locale =
   | "en"
@@ -140,7 +141,7 @@ function pickLocale(value: unknown): Locale | null {
   return parseLocale(record.locale)
 }
 
-const base = i18n.flatten({ ...appEn, ...desktopEn })
+const base = i18n.flatten({ ...appEn, ...desktopEn }) as Dictionary
 
 function build(locale: Locale): Dictionary {
   if (locale === "en") return base
@@ -172,7 +173,7 @@ state.dict = build(state.locale)
 const translate = i18n.translator(() => state.dict, i18n.resolveTemplate)
 
 export function t(key: keyof Dictionary, params?: Record<string, string | number>) {
-  return translate(key, params)
+  return brandText(translate(key, params))
 }
 
 export function initI18n(): Promise<Locale> {

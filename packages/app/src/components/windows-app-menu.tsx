@@ -8,6 +8,7 @@ import { Icon as IconV2 } from "@opencode-ai/ui/v2/components/icon.jsx"
 import { useCommand } from "@/context/command"
 import { DESKTOP_MENU, desktopMenuVisible, type DesktopMenuAction, type DesktopMenuEntry } from "@/desktop-menu"
 import { usePlatform } from "@/context/platform"
+import { Brand } from "@/brand"
 
 export function WindowsAppMenu(props: {
   command: ReturnType<typeof useCommand>
@@ -58,7 +59,7 @@ export function WindowsAppMenu(props: {
             variant="ghost-muted"
             size="large"
             icon={<IconV2 name="menu" />}
-            aria-label="OpenCode menu"
+            aria-label={`${Brand.product} menu`}
             onPointerDown={rememberFocus}
             onKeyDown={rememberFocus}
           />
@@ -69,7 +70,7 @@ export function WindowsAppMenu(props: {
           icon="menu"
           variant="ghost"
           class="titlebar-icon rounded-md shrink-0"
-          aria-label="OpenCode menu"
+          aria-label={`${Brand.product} menu`}
           onPointerDown={rememberFocus}
           onKeyDown={rememberFocus}
         />
@@ -77,7 +78,7 @@ export function WindowsAppMenu(props: {
       <DropdownMenu.Portal>
         <DropdownMenu.Content class="desktop-app-menu">
           <DropdownMenu.Group>
-            <DropdownMenu.GroupLabel class="desktop-app-menu-heading">OpenCode</DropdownMenu.GroupLabel>
+            <DropdownMenu.GroupLabel class="desktop-app-menu-heading">{Brand.product}</DropdownMenu.GroupLabel>
             {DESKTOP_MENU.filter((menu) => desktopMenuVisible(menu, "windows")).map((menu) => (
               <DesktopMenuSubmenu label={menu.label}>
                 {menu.items

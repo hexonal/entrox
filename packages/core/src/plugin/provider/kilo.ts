@@ -1,4 +1,5 @@
 import { Effect } from "effect"
+import { ProviderBrand } from "../../brand"
 import { PluginV2 } from "../../plugin"
 
 export const KiloPlugin = PluginV2.define({
@@ -11,8 +12,8 @@ export const KiloPlugin = PluginV2.define({
           if (item.provider.endpoint.package !== "@ai-sdk/openai-compatible") continue
           if (item.provider.endpoint.url !== "https://api.kilo.ai/api/gateway") continue
           evt.provider.update(item.provider.id, (provider) => {
-            provider.options.headers["HTTP-Referer"] = "https://opencode.ai/"
-            provider.options.headers["X-Title"] = "opencode"
+            provider.options.headers["HTTP-Referer"] = ProviderBrand.websiteURL
+            provider.options.headers["X-Title"] = ProviderBrand.title
           })
         }
       }),

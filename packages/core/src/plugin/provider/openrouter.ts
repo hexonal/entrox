@@ -1,5 +1,6 @@
 import { Effect } from "effect"
 import { ModelV2 } from "../../model"
+import { ProviderBrand } from "../../brand"
 import { PluginV2 } from "../../plugin"
 
 export const OpenRouterPlugin = PluginV2.define({
@@ -11,8 +12,8 @@ export const OpenRouterPlugin = PluginV2.define({
           if (item.provider.endpoint.type !== "aisdk") continue
           if (item.provider.endpoint.package !== "@openrouter/ai-sdk-provider") continue
           evt.provider.update(item.provider.id, (provider) => {
-            provider.options.headers["HTTP-Referer"] = "https://opencode.ai/"
-            provider.options.headers["X-Title"] = "opencode"
+            provider.options.headers["HTTP-Referer"] = ProviderBrand.websiteURL
+            provider.options.headers["X-Title"] = ProviderBrand.title
           })
           for (const modelID of [ModelV2.ID.make("gpt-5-chat-latest"), ModelV2.ID.make("openai/gpt-5-chat")]) {
             if (!item.models.has(modelID)) continue

@@ -2,6 +2,7 @@ import { createMemo } from "solid-js"
 import { createSimpleContext } from "@opencode-ai/ui/context"
 import { i18n, type Key } from "~/i18n"
 import { useLanguage } from "~/context/language"
+import { brandPublicText } from "~/lib/brand"
 
 function resolve(text: string, params?: Record<string, string | number>) {
   if (!params) return text
@@ -20,7 +21,7 @@ export const { use: useI18n, provider: I18nProvider } = createSimpleContext({
 
     return {
       t(key: Key, params?: Record<string, string | number>) {
-        return resolve(dict()[key], params)
+        return brandPublicText(resolve(dict()[key], params))
       },
     }
   },

@@ -1,10 +1,11 @@
 import type { APIEvent } from "@solidjs/start/server"
 import { LOCALE_HEADER, localeFromCookieHeader, parseLocale, tag } from "~/lib/language"
+import { publicBrand } from "~/lib/brand"
 
 async function handler(evt: APIEvent) {
   const req = evt.request.clone()
   const url = new URL(req.url)
-  const targetUrl = `https://enterprise.opencode.ai/${url.pathname}${url.search}`
+  const targetUrl = `https://enterprise.${publicBrand.domain}/${url.pathname}${url.search}`
 
   const headers = new Headers(req.headers)
   const locale = parseLocale(req.headers.get(LOCALE_HEADER)) ?? localeFromCookieHeader(req.headers.get("cookie"))

@@ -1,6 +1,6 @@
-# OpenCode Desktop
+# Entrox Desktop
 
-The OpenCode Desktop app, built with Electron.
+The Entrox Desktop app, built with Electron.
 
 ## Development
 

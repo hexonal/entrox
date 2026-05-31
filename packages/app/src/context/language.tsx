@@ -5,6 +5,7 @@ import { createSimpleContext } from "@opencode-ai/ui/context"
 import { Persist, persisted } from "@/utils/persist"
 import { dict as en } from "@/i18n/en"
 import { dict as uiEn } from "@opencode-ai/ui/i18n/en"
+import { brandText } from "@/brand"
 
 export type Locale =
   | "en"
@@ -97,7 +98,7 @@ const LABEL_KEY: Record<Locale, keyof Dictionary> = {
   tr: "language.tr",
 }
 
-const base = i18n.flatten({ ...en, ...uiEn })
+const base = i18n.flatten({ ...en, ...uiEn }) as Dictionary
 const dicts = new Map<Locale, Dictionary>([["en", base]])
 
 const merge = (app: Promise<Source>, ui: Promise<Source>) =>
@@ -214,10 +215,12 @@ export const { use: useLanguage, provider: LanguageProvider } = createSimpleCont
       initialValue: dicts.get(initial) ?? base,
     })
 
-    const t = i18n.translator(() => dict() ?? base, i18n.resolveTemplate) as (
+    const translate = i18n.translator(() => dict() ?? base, i18n.resolveTemplate) as (
       key: keyof Dictionary,
       params?: Record<string, string | number | boolean>,
     ) => string
+    const t = (key: keyof Dictionary, params?: Record<string, string | number | boolean>) =>
+      brandText(translate(key, params))
 
     const label = (value: Locale) => t(LABEL_KEY[value])
 

@@ -1,4 +1,5 @@
 import { Effect } from "effect"
+import { ProviderBrand } from "../../brand"
 import { PluginV2 } from "../../plugin"
 
 export const CerebrasPlugin = PluginV2.define({
@@ -10,7 +11,7 @@ export const CerebrasPlugin = PluginV2.define({
           if (item.provider.endpoint.type !== "aisdk") continue
           if (item.provider.endpoint.package !== "@ai-sdk/cerebras") continue
           ctx.provider.update(item.provider.id, (provider) => {
-            provider.options.headers["X-Cerebras-3rd-Party-Integration"] = "opencode"
+            provider.options.headers["X-Cerebras-3rd-Party-Integration"] = ProviderBrand.title
           })
         }
       }),

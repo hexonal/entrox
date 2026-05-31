@@ -8,6 +8,9 @@ import config from "./config.mjs"
 import { rehypeHeadingIds } from "@astrojs/markdown-remark"
 import rehypeAutolinkHeadings from "rehype-autolink-headings"
 import { spawnSync } from "child_process"
+import { fileURLToPath } from "node:url"
+import { brandPublicText } from "./src/brand.mjs"
+import { rewritePublicBrandOutput } from "./script/brand-public-output.mjs"
 
 // https://astro.build/config
 export default defineConfig({
@@ -24,14 +27,15 @@ export default defineConfig({
     host: "0.0.0.0",
   },
   markdown: {
-    rehypePlugins: [rehypeHeadingIds, [rehypeAutolinkHeadings, { behavior: "wrap" }]],
+    rehypePlugins: [rehypeEntroxBrand, rehypeHeadingIds, [rehypeAutolinkHeadings, { behavior: "wrap" }]],
   },
   build: {},
   integrations: [
+    publicBrandGeneratedPages(),
     configSchema(),
     solidJs(),
     starlight({
-      title: "OpenCode",
+      title: "Entrox",
       defaultLocale: "root",
       locales: {
         root: {
@@ -309,6 +313,28 @@ export default defineConfig({
   ],
 })
 
+function rehypeEntroxBrand() {
+  return (tree) => {
+    rewriteHastNode(tree)
+  }
+}
+
+function rewriteHastNode(node) {
+  if (!node || typeof node !== "object") return
+  if (node.type === "text") {
+    node.value = brandPublicText(node.value)
+  }
+  if (node.properties && typeof node.properties === "object") {
+    for (const [key, value] of Object.entries(node.properties)) {
+      if (typeof value === "string") node.properties[key] = brandPublicText(value)
+      if (Array.isArray(value)) node.properties[key] = value.map((item) => brandPublicText(item))
+    }
+  }
+  if (Array.isArray(node.children)) {
+    for (const child of node.children) rewriteHastNode(child)
+  }
+}
+
 function configSchema() {
   return {
     name: "configSchema",
@@ -316,6 +342,17 @@ function configSchema() {
       "astro:build:done": async () => {
         console.log("generating config schema")
         spawnSync("../opencode/script/schema.ts", ["./dist/config.json", "./dist/tui.json"])
+      },
+    },
+  }
+}
+
+function publicBrandGeneratedPages() {
+  return {
+    name: "entrox-public-brand-generated-pages",
+    hooks: {
+      "astro:build:generated": async ({ dir }) => {
+        await rewritePublicBrandOutput(fileURLToPath(dir), { compressed: false, log: false })
       },
     },
   }

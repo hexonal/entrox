@@ -13,6 +13,7 @@
     "dev:stats": "bun sst shell --stage=production -- bun run --cwd packages/stats/app dev",
     "dev:storybook": "bun --cwd packages/storybook storybook",
     "lint": "oxlint",
+    "check:whitelabel": "bun script/entrox-whitelabel-check.ts",
     "typecheck": "bun turbo typecheck",
     "upgrade-opentui": "bun run script/upgrade-opentui.ts",
     "postinstall": "bun run --cwd packages/opencode fix-node-pty",
@@ -114,7 +115,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/anomalyco/opencode"
+    "url": "https://github.com/hexonal/entrox"
   },
   "license": "MIT",
   "prettier": {

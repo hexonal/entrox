@@ -4,10 +4,10 @@
   "version": "1.15.13",
   "type": "module",
   "license": "MIT",
-  "homepage": "https://opencode.ai",
+  "homepage": "https://entrox.996icu.wiki",
   "author": {
-    "name": "OpenCode",
-    "email": "hello@opencode.ai"
+    "name": "Entrox",
+    "email": "w741069229@gmail.com"
   },
   "scripts": {
     "typecheck": "tsgo -b",

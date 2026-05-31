@@ -36,7 +36,7 @@ export const subjects = createSubjects({
 
 const MY_THEME: Theme = {
   ...THEME_OPENAUTH,
-  logo: "https://opencode.ai/favicon-v3.svg",
+  logo: "https://entrox.996icu.wiki/favicon-v3.svg",
 }
 
 export default {
@@ -112,7 +112,7 @@ export default {
           const emails = (await fetch("https://api.github.com/user/emails", {
             headers: {
               Authorization: `Bearer ${response.tokenset.access}`,
-              "User-Agent": "opencode",
+              "User-Agent": "entrox",
               Accept: "application/vnd.github+json",
             },
           }).then((x) => x.json())) as any
@@ -138,7 +138,7 @@ export default {
         if (!email) throw new Error("No email found")
         if (!subject) throw new Error("No subject found")
 
-        if (Resource.App.stage !== "production" && !email.endsWith("@anoma.ly")) {
+        if (Resource.App.stage !== "production" && !email.endsWith("@hexonal.com")) {
           throw new Error("Invalid email")
         }
 

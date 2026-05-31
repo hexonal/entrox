@@ -9,12 +9,13 @@ import "./app.css"
 import { LanguageProvider } from "~/context/language"
 import { I18nProvider, useI18n } from "~/context/i18n"
 import { strip } from "~/lib/language"
+import { publicBrand } from "~/lib/brand"
 
 function AppMeta() {
   const i18n = useI18n()
   return (
     <>
-      <Title>opencode</Title>
+      <Title>{publicBrand.command}</Title>
       <Meta name="description" content={i18n.t("app.meta.description")} />
       <Favicon />
       <Font />

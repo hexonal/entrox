@@ -21,8 +21,8 @@ body:
   - type: input
     id: opencode-version
     attributes:
-      label: OpenCode version
-      description: What version of OpenCode are you using?
+      label: Entrox version
+      description: What version of Entrox are you using?
     validations:
       required: false
 

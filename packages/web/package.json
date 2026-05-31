@@ -5,9 +5,9 @@
   "version": "1.15.13",
   "scripts": {
     "dev": "astro dev",
-    "dev:remote": "VITE_API_URL=https://api.opencode.ai astro dev",
+    "dev:remote": "VITE_API_URL=https://api.entrox.996icu.wiki astro dev",
     "start": "astro dev",
-    "build": "astro build",
+    "build": "astro build && bun ./script/brand-public-output.mjs",
     "preview": "astro preview",
     "astro": "astro"
   },
