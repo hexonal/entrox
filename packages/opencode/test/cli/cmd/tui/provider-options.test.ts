@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test"
 import {
+  configuredProviderOptions,
   credentialDisplayName,
+  hasBrowserLoginConnection,
   loginActionOptions,
   normalizeWellKnownProviderURL,
   providerOptions,
@@ -35,16 +37,74 @@ describe("providerOptions", () => {
   test("does not expose upstream opencode provider as a provider choice", () => {
     const names = providerOptions([
       { id: "opencode", name: "opencode" },
+      { id: "opencode-go", name: "opencode Go" },
       { id: "google", name: "Gemini" },
     ]).map((option) => option.title)
     expect(names).toContain("Gemini")
     expect(names).not.toContain("opencode")
+    expect(names).not.toContain("opencode Go")
   })
 
   test("does not expose custom provider option", () => {
     const options = providerOptions([{ id: "other", name: "Other Provider" }])
     expect(options.map((option) => option.title)).not.toContain("Other")
     expect(options.map((option) => option.description)).not.toContain("Custom provider")
+  })
+
+  test("only exposes providers that are connected from the full provider catalog", () => {
+    const options = configuredProviderOptions(
+      [
+        { id: "openai", name: "OpenAI" },
+        { id: "google", name: "Gemini" },
+        { id: "aihubmix", name: "AIHubMix" },
+        { id: "opencode", name: "opencode" },
+        { id: "other", name: "Other Provider" },
+      ],
+      ["google", "opencode", "other", "https://entrox.996icu.wiki"],
+    )
+
+    expect(options).toMatchObject([
+      {
+        title: "Entrox",
+        description: "Browser login",
+        category: "Provider",
+      },
+      {
+        title: "Gemini",
+        value: "google",
+        category: "Configured",
+      },
+    ])
+    expect(options.map((option) => option.title)).not.toContain("AIHubMix")
+    expect(options.map((option) => option.title)).not.toContain("OpenAI")
+    expect(options.map((option) => option.title)).not.toContain("opencode")
+    expect(options.map((option) => option.title)).not.toContain("Other")
+  })
+
+  test("does not duplicate Entrox browser login providers under configured", () => {
+    const options = configuredProviderOptions(
+      [
+        { id: "entrox", name: "Entrox" },
+        { id: "entrox-anthropic", name: "Entrox" },
+        { id: "entrox-gemini", name: "Entrox" },
+      ],
+      ["entrox", "entrox-anthropic", "entrox-gemini"],
+    )
+
+    expect(options).toMatchObject([
+      {
+        title: "Entrox",
+        description: "Browser login",
+        category: "Provider",
+      },
+    ])
+    expect(options.filter((option) => option.title === "Entrox")).toHaveLength(1)
+  })
+
+  test("detects existing Entrox browser login from generated provider ids", () => {
+    expect(hasBrowserLoginConnection(["entrox", "entrox-anthropic", "entrox-gemini"])).toBe(true)
+    expect(hasBrowserLoginConnection(["https://entrox.996icu.wiki/"])).toBe(true)
+    expect(hasBrowserLoginConnection(["google"])).toBe(false)
   })
 
   test("normalizes and validates well-known provider urls", () => {

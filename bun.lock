@@ -458,7 +458,7 @@
       "name": "entrox",
       "version": "1.15.13",
       "bin": {
-        "entrox": "./bin/opencode",
+        "entrox": "./bin/entrox",
       },
       "dependencies": {
         "@actions/core": "1.11.1",

@@ -174,7 +174,9 @@ for (const item of targets) {
     format: "esm",
     minify: true,
     sourcemap: sourcemapsFlag ? "linked" : "none",
-    splitting: true,
+    // Bun compiled binaries with split chunks can initialize OpenTUI singletons
+    // inconsistently, which crashes TUI startup in createCliRenderer.
+    splitting: false,
     compile: {
       autoloadBunfig: false,
       autoloadDotenv: false,

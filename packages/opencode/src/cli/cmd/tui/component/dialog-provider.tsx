@@ -59,9 +59,26 @@ export function loginActionOptions(hasExisting: boolean): Array<{ label: string;
   ]
 }
 
+export function isBrowserLoginProviderID(providerID: string) {
+  return (
+    providerID === Brand.command ||
+    providerID.startsWith(`${Brand.command}-`) ||
+    providerID === Brand.legacyCommand ||
+    providerID.startsWith(`${Brand.legacyCommand}-`)
+  )
+}
+
+export function hasBrowserLoginConnection(connected: readonly string[]) {
+  const bundledURL = normalizeWellKnownProviderURL(Brand.authProviderURL)
+  return connected.some((providerID) => {
+    if (isBrowserLoginProviderID(providerID)) return true
+    return normalizeWellKnownProviderURL(providerID) === bundledURL
+  })
+}
+
 export function providerOptions(list: { id: string; name: string }[]): ProviderOption[] {
   const configured = [...list]
-    .filter((provider) => provider.id !== Brand.legacyCommand && provider.id !== "other")
+    .filter((provider) => !isBrowserLoginProviderID(provider.id) && provider.id !== "other")
     .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
     .map(
       (provider): ProviderOption => ({
@@ -85,6 +102,14 @@ export function providerOptions(list: { id: string; name: string }[]): ProviderO
   ]
 }
 
+export function configuredProviderOptions(
+  all: { id: string; name: string }[],
+  connected: readonly string[],
+): ProviderOption[] {
+  const connectedIDs = new Set(connected)
+  return providerOptions(all.filter((provider) => connectedIDs.has(provider.id)))
+}
+
 export function createDialogProviderOptions() {
   const sync = useSync()
   const dialog = useDialog()
@@ -99,14 +124,16 @@ export function createDialogProviderOptions() {
 
   const options = createMemo(() => {
     return pipe(
-      providerOptions(sync.data.provider_next.all),
+      configuredProviderOptions(sync.data.provider_next.all, sync.data.provider_next.connected),
       map((provider) => {
         if (provider.type === "well-known") {
+          const connected = hasBrowserLoginConnection(sync.data.provider_next.connected)
           return {
             title: provider.title,
             value: provider.value,
             description: provider.description,
             category: provider.category,
+            gutter: connected && onboarded() ? () => <text fg={theme.success}>✓</text> : undefined,
             async onSelect() {
               promptWellKnownProviderURL()
             },
@@ -253,7 +280,7 @@ function WellKnownMethod(props: { url: string }) {
     }
 
     try {
-      const existing = sync.data.provider_next.connected.includes(url)
+      const existing = hasBrowserLoginConnection(sync.data.provider_next.connected)
       if (existing) {
         toast.show({ variant: "success", message: `Using existing ${credentialDisplayName(url)}` })
         dialog.replace(() => <DialogModel />)
