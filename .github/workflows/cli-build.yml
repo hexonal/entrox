@@ -97,7 +97,7 @@ jobs:
 
       - name: Publish dev prerelease
         env:
-          GH_TOKEN: ${{ steps.committer.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
           TAG_NAME: entrox-dev
         run: |
           cat > release-notes.md <<'EOF'
