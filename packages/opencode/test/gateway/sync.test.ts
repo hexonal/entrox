@@ -3,6 +3,64 @@ import { Brand } from "../../src/brand"
 import { getGatewayStatus, logoutGateway, syncGateway } from "../../src/gateway/sync"
 
 describe("gateway sync", () => {
+  test("syncs API-key login through the remote Entrox config endpoint", async () => {
+    const auth = createAuthStore()
+    const config = createConfigStore({
+      provider: {
+        "entro-openai": { name: "Stale Entrox OpenAI" },
+        openai: { name: "User OpenAI" },
+      },
+    })
+
+    const result = await syncGateway({
+      token: "sk-login",
+      auth,
+      config,
+      fetch: createRemoteConfigFetch({
+        provider: {
+          entrox: {
+            npm: "@ai-sdk/openai-compatible",
+            name: "Entrox",
+            options: {
+              baseURL: "https://entrox.996icu.wiki/v1",
+              apiKey: "{env:SUB2API_API_KEY}",
+            },
+            models: { "gpt-5": { name: "GPT-5" } },
+          },
+          "entrox-anthropic": {
+            npm: "@ai-sdk/anthropic",
+            name: "Entrox",
+            options: {
+              baseURL: "https://entrox.996icu.wiki/v1",
+              apiKey: "{env:SUB2API_API_KEY}",
+            },
+            models: { "claude-sonnet-4": { name: "Claude Sonnet 4" } },
+          },
+        },
+      }),
+    })
+
+    expect(result.summary).toEqual({ providerCount: 2, modelCount: 2, failedCount: 0 })
+    expect(auth.records.entrox).toEqual({ type: "api", key: "sk-login" })
+    expect(auth.records["entrox-anthropic"]).toEqual({ type: "api", key: "sk-login" })
+    expect(auth.records["entro-openai"]).toBeUndefined()
+    expect(config.value.provider).toEqual({
+      openai: { name: "User OpenAI" },
+      entrox: {
+        npm: "@ai-sdk/openai-compatible",
+        name: "Entrox",
+        options: { baseURL: "https://entrox.996icu.wiki/v1" },
+        models: { "gpt-5": { name: "GPT-5" } },
+      },
+      "entrox-anthropic": {
+        npm: "@ai-sdk/anthropic",
+        name: "Entrox",
+        options: { baseURL: "https://entrox.996icu.wiki/v1" },
+        models: { "claude-sonnet-4": { name: "Claude Sonnet 4" } },
+      },
+    })
+  })
+
   test("syncs active groups into provider auth and config", async () => {
     const auth = createAuthStore()
     const config = createConfigStore()
@@ -64,12 +122,14 @@ describe("gateway sync", () => {
     const auth = createAuthStore({
       [Brand.authProviderURL]: { type: "wellknown", key: "ENTROX_TOKEN", token: "token" },
       "entro-openai": { type: "api", key: "sk-openai" },
+      "entrox-anthropic": { type: "api", key: "sk-anthropic" },
       sub2api: { type: "api", key: "legacy" },
       openai: { type: "api", key: "user-openai" },
     })
     const config = createConfigStore({
       provider: {
         "entro-openai": { name: "Entrox OpenAI" },
+        "entrox-anthropic": { name: "Entrox Anthropic" },
         sub2api: { name: "Legacy Gateway" },
         openai: { name: "User OpenAI" },
       },
@@ -77,7 +137,7 @@ describe("gateway sync", () => {
 
     const result = await logoutGateway({ auth, config })
 
-    expect(result.removedAuth).toEqual(["entro-openai", "sub2api"])
+    expect(result.removedAuth).toEqual(["entro-openai", "entrox-anthropic", "sub2api"])
     expect(auth.records[Brand.authProviderURL]).toEqual({ type: "wellknown", key: "ENTROX_TOKEN", token: "token" })
     expect(auth.records.openai).toEqual({ type: "api", key: "user-openai" })
     expect(auth.records["entro-openai"]).toBeUndefined()
@@ -156,6 +216,30 @@ function createGatewayFetch(input: {
         return Response.json({ message: `group ${body.group_id} failed` }, { status: 500 })
       }
       return Response.json({ data: { id: body.group_id, key: input.createdKeys[body.group_id], group_id: body.group_id } })
+    }
+    return Response.json({ message: `Unhandled ${url}` }, { status: 404 })
+  }
+}
+
+function createRemoteConfigFetch(input: { provider: Record<string, unknown> }) {
+  return async (request: string | URL | Request, init?: RequestInit) => {
+    const url = String(request)
+    const auth = new Headers(init?.headers).get("authorization")
+    if (!auth) return Response.json({ message: "missing auth" }, { status: 401 })
+    if (url.endsWith("/.well-known/opencode")) {
+      return Response.json({
+        remote_config: {
+          url: "https://entrox.996icu.wiki/api/v1/entrox/opencode/config",
+          headers: { Authorization: "Bearer {env:SUB2API_API_KEY}" },
+        },
+      })
+    }
+    if (url.endsWith("/api/v1/entrox/opencode/config")) {
+      return Response.json({
+        config: {
+          provider: input.provider,
+        },
+      })
     }
     return Response.json({ message: `Unhandled ${url}` }, { status: 404 })
   }

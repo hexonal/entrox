@@ -6,6 +6,7 @@ import {
   buildGatewayProviderConfig,
   createGatewayProviderId,
   getOrCreateApiKeyForGroup,
+  getRemoteGatewayConfig,
   isGatewayProviderId,
   LEGACY_GATEWAY_PROVIDER_ID,
   listAvailableGroups,
@@ -90,6 +91,10 @@ export async function syncGateway(input: GatewaySyncInput): Promise<GatewaySyncR
   const token = input.token ?? (await getStoredGatewayToken(input.auth, baseUrl))
   if (!token) throw new Error(`Run ${Brand.command} login before syncing ${Brand.product} gateway providers`)
 
+  if (isSub2APIKey(token)) {
+    return syncGatewayFromAPIKey({ ...input, baseUrl, apiKey: token })
+  }
+
   const groups = filterSyncableGroups(
     await listAvailableGroups({
       baseUrl,
@@ -117,6 +122,45 @@ export async function syncGateway(input: GatewaySyncInput): Promise<GatewaySyncR
     providers,
     failures,
     summary: summarizeProviderSync({ providers, failures }),
+  }
+}
+
+async function syncGatewayFromAPIKey(input: GatewaySyncInput & {
+  apiKey: string
+  baseUrl: string
+}): Promise<GatewaySyncResult> {
+  const remote = await getRemoteGatewayConfig({
+    apiKey: input.apiKey,
+    baseUrl: input.baseUrl,
+    fetch: input.fetch,
+    token: input.apiKey,
+  })
+  const providerEntries = Object.entries(remote.provider).filter(([providerId]) => isGatewayProviderId(providerId))
+  if (providerEntries.length === 0) {
+    throw new Error("No Entrox gateway models are available for this API key")
+  }
+
+  await Promise.all(providerEntries.map(([providerId]) => input.auth.set(providerId, { type: "api", key: input.apiKey })))
+  await writeProviderConfig({
+    config: input.config,
+    providerConfigs: Object.fromEntries(providerEntries),
+    syncableProviderIds: new Set(providerEntries.map(([providerId]) => providerId)),
+  })
+  await removeStaleProviderAuth({
+    auth: input.auth,
+    syncableProviderIds: new Set(providerEntries.map(([providerId]) => providerId)),
+  })
+
+  const providers = providerEntries.map(([providerId, config]) => ({
+    providerId,
+    providerName: config.name,
+    modelCount: Object.keys(config.models).length,
+  }))
+
+  return {
+    providers,
+    failures: [],
+    summary: summarizeProviderSync({ providers, failures: [] }),
   }
 }
 
@@ -268,6 +312,10 @@ function providerName(providerId: string, provider: unknown) {
 function errorMessage(error: unknown) {
   if (error instanceof Error) return error.message
   return String(error)
+}
+
+function isSub2APIKey(token: string) {
+  return token.startsWith("sk-")
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

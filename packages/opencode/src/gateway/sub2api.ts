@@ -9,6 +9,8 @@ export const GATEWAY_ENDPOINTS = {
   apiKeys: "/api/v1/keys",
   groups: "/api/v1/groups/available",
   models: "/v1/models",
+  remoteConfig: "/api/v1/entrox/opencode/config",
+  wellKnown: Brand.wellKnownPath,
 } as const
 
 export type GatewayFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>
@@ -21,12 +23,22 @@ export type GatewayModelConfig = {
 export type GatewayModelsRecord = Record<string, GatewayModelConfig>
 
 export type GatewayProviderConfig = {
-  npm: "@ai-sdk/openai-compatible"
+  npm: string
   name: string
-  options: {
-    baseURL: string
-  }
+  api?: string
+  options?: Record<string, unknown>
   models: GatewayModelsRecord
+}
+
+export type GatewayRemoteConfig = {
+  provider: Record<string, GatewayProviderConfig>
+}
+
+export type GatewayWellKnown = {
+  remote_config?: {
+    headers?: Record<string, string>
+    url?: string
+  }
 }
 
 export type BuildGatewayProviderConfigInput = {
@@ -87,7 +99,12 @@ export function createGatewayProviderId(platform: string) {
 }
 
 export function isGatewayProviderId(providerId: string) {
-  return providerId === LEGACY_GATEWAY_PROVIDER_ID || /^entro-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(providerId)
+  return (
+    providerId === LEGACY_GATEWAY_PROVIDER_ID ||
+    providerId === "entrox" ||
+    /^entro-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(providerId) ||
+    /^entrox-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(providerId)
+  )
 }
 
 export function buildGatewayProviderConfig(input: BuildGatewayProviderConfigInput): GatewayProviderConfig {
@@ -138,7 +155,20 @@ export async function listModels(input: GatewayAuthInput) {
   return normalizeModels(await gatewayRequest(input, GATEWAY_ENDPOINTS.models))
 }
 
+export async function getRemoteGatewayConfig(input: GatewayAuthInput): Promise<GatewayRemoteConfig> {
+  const wellKnown = await gatewayRequest(input, GATEWAY_ENDPOINTS.wellKnown).catch(() => undefined)
+  const remote = normalizeWellKnown(wellKnown)?.remote_config
+  const requestUrl = remote?.url?.trim() || joinURL(normalizeGatewayURL(input.baseUrl), GATEWAY_ENDPOINTS.remoteConfig)
+  const headers = buildRemoteConfigHeaders(remote?.headers, input.apiKey ?? input.token)
+  const payload = await gatewayRequestURL(input, requestUrl, { headers })
+  return normalizeRemoteConfig(payload)
+}
+
 async function gatewayRequest(input: GatewayAuthInput, path: string, init: RequestInit = {}) {
+  return gatewayRequestURL(input, joinURL(normalizeGatewayURL(input.baseUrl), path), init)
+}
+
+async function gatewayRequestURL(input: GatewayAuthInput, url: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers)
   headers.set("accept", "application/json")
 
@@ -146,7 +176,7 @@ async function gatewayRequest(input: GatewayAuthInput, path: string, init: Reque
   if (input.apiKey) headers.set("authorization", `Bearer ${input.apiKey}`)
   if (!input.apiKey && input.token) headers.set("authorization", `Bearer ${input.token}`)
 
-  const response = await (input.fetch ?? fetch)(joinURL(normalizeGatewayURL(input.baseUrl), path), {
+  const response = await (input.fetch ?? fetch)(url, {
     ...init,
     headers,
   })
@@ -157,6 +187,13 @@ async function gatewayRequest(input: GatewayAuthInput, path: string, init: Reque
   }
 
   return body
+}
+
+function buildRemoteConfigHeaders(template: Record<string, string> | undefined, token: string | undefined) {
+  if (!template) return undefined
+  return Object.fromEntries(
+    Object.entries(template).map(([key, value]) => [key, token ? value.replace(/\{env:[^}]+\}/g, token) : value]),
+  )
 }
 
 async function parseResponseBody(response: Response) {
@@ -202,6 +239,62 @@ function normalizeModels(payload: unknown): GatewayModelsRecord {
       normalizeModelConfig(entry[0], entry[1]),
     ]),
   )
+}
+
+function normalizeWellKnown(payload: unknown): GatewayWellKnown | undefined {
+  if (!isRecord(payload)) return undefined
+  const source = normalizeObject(payload)
+  const remote = source.remote_config
+  if (!isRecord(remote)) return {}
+
+  const headers = isRecord(remote.headers)
+    ? Object.fromEntries(
+        Object.entries(remote.headers).flatMap(([key, value]) =>
+          typeof value === "string" ? [[key, value]] : [],
+        ),
+      )
+    : undefined
+
+  return {
+    remote_config: {
+      headers,
+      url: stringFrom(remote.url),
+    },
+  }
+}
+
+function normalizeRemoteConfig(payload: unknown): GatewayRemoteConfig {
+  const source = normalizeObject(payload)
+  const config = isRecord(source.config) ? source.config : source
+  const provider = normalizeObject(config.provider)
+
+  return {
+    provider: Object.fromEntries(
+      Object.entries(provider).flatMap(([providerId, value]) => {
+        const next = normalizeProviderConfig(value)
+        return next ? [[providerId, next]] : []
+      }),
+    ),
+  }
+}
+
+function normalizeProviderConfig(payload: unknown): GatewayProviderConfig | undefined {
+  if (!isRecord(payload)) return undefined
+  const models = normalizeModels({ models: payload.models })
+  if (Object.keys(models).length === 0) return undefined
+
+  const options = normalizeObject(payload.options)
+  const cleanOptions = Object.fromEntries(
+    Object.entries(options).filter(([key]) => key !== "apiKey" && key !== "apikey" && key !== "api_key"),
+  )
+
+  return {
+    npm: stringFrom(payload.npm) ?? "@ai-sdk/openai-compatible",
+    name: stringFrom(payload.name) ?? Brand.product,
+    ...(stringFrom(payload.api) ? { api: stringFrom(payload.api) } : {}),
+    ...(Object.keys(cleanOptions).length > 0 ? { options: cleanOptions } : {}),
+    models,
+  }
 }
 
 function modelEntry(item: unknown): [string, GatewayModelConfig] | undefined {
