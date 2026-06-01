@@ -118,8 +118,10 @@ if (image) {
       </div>
       <div class="col3">
         <h3>Homebrew</h3>
-        <button class="command" data-command="brew install entrox">
+        <button class="command" data-command={`brew tap hexonal/entrox
+brew install entrox`}>
           <code>
+            <span>brew tap</span> <span class="highlight">hexonal/entrox</span><br />
             <span>brew install</span> <span class="highlight">entrox</span>
           </code>
           <span class="copy">
