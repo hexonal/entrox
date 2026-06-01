@@ -22,7 +22,7 @@ async function readCache(): Promise<UpdateCheckCache> {
   return Filesystem.readJson<UpdateCheckCache>(CACHE_FILE).catch(() => ({}))
 }
 
-async function writeCache(latest: string): Promise<void> {
+async function writeCache(latest?: string): Promise<void> {
   await Filesystem.writeJson(CACHE_FILE, { checkedAt: Date.now(), latest }, 0o600).catch(() => undefined)
 }
 
@@ -40,7 +40,7 @@ function releaseType(latest: string): Installation.ReleaseType {
   return Installation.getReleaseType(current, target)
 }
 
-async function latestWithCache(method: Installation.Method): Promise<string | undefined> {
+async function latestWithCache(method?: Installation.Method): Promise<string | undefined> {
   const cache = await readCache()
   const cachedLatest = typeof cache.latest === "string" ? cache.latest : undefined
   const checkedAt = typeof cache.checkedAt === "number" ? cache.checkedAt : 0
@@ -49,16 +49,16 @@ async function latestWithCache(method: Installation.Method): Promise<string | un
     return cachedLatest
   }
 
-  const latest = await Installation.latest(method).catch(() => undefined)
-  if (latest) await writeCache(latest)
+  const latest = await (method ? Installation.latest(method) : Installation.latest()).catch(() => undefined)
+  await writeCache(latest ?? cachedLatest)
   return latest ?? cachedLatest
 }
 
 export async function upgrade() {
   const config = await AppRuntime.runPromise(Config.Service.use((cfg) => cfg.getGlobal()))
   if (config.autoupdate === false || Flag.OPENCODE_DISABLE_AUTOUPDATE) return
-  const method = await Installation.method()
-  const latest = await latestWithCache(method)
+  const latestMethod = Brand.command === "entrox" ? "unknown" : undefined
+  const latest = await latestWithCache(latestMethod)
   if (!latest) return
 
   if (Flag.OPENCODE_ALWAYS_NOTIFY_UPDATE) {
@@ -87,6 +87,7 @@ export async function upgrade() {
     return
   }
 
+  const method = await Installation.method()
   if (method === "unknown") return
   await Installation.upgrade(method, latest)
     .then(() =>
