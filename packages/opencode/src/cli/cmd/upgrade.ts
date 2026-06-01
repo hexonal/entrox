@@ -44,7 +44,7 @@ export const UpgradeCommand = {
       }
     }
     prompts.log.info("Using method: " + method)
-    const target = args.target ? args.target.replace(/^v/, "") : await Installation.latest()
+    const target = args.target ? args.target.replace(/^v/, "") : await Installation.latest(method)
 
     if (InstallationVersion === target) {
       prompts.log.warn(`${Brand.command} upgrade skipped: ${target} is already installed`)

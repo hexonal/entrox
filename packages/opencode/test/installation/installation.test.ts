@@ -59,12 +59,19 @@ function testLayer(
 
 describe("installation", () => {
   describe("latest", () => {
-    testEffect(testLayer(() => jsonResponse({ tag_name: "v1.2.3" }))).effect(
-      "reads release version from GitHub releases",
+    const unknownCalls: string[] = []
+    testEffect(
+      testLayer((request) => {
+        unknownCalls.push(request.url)
+        return jsonResponse({ version: "0.0.0-ci.23.1" })
+      }),
+    ).effect(
+      "reads unknown installer versions from the Entrox dev manifest",
       () =>
         Effect.gen(function* () {
           const result = yield* Installation.use.latest("unknown")
-          expect(result).toBe("1.2.3")
+          expect(result).toBe("0.0.0-ci.23.1")
+          expect(unknownCalls).toContain(`${Brand.websiteURL}/downloads/entrox-dev/latest.json`)
         }),
     )
 
@@ -130,15 +137,13 @@ describe("installation", () => {
     testEffect(
       testLayer((request) => {
         scoopCalls.push(request.url)
-        return jsonResponse({ version: "2.3.4" })
+        return jsonResponse({ version: "0.0.0-ci.23.1" })
       }),
-    ).effect("reads scoop manifest versions from the Entrox bucket", () =>
+    ).effect("reads scoop installer versions from the Entrox dev manifest", () =>
       Effect.gen(function* () {
         const result = yield* Installation.use.latest("scoop")
-        expect(result).toBe("2.3.4")
-        expect(scoopCalls).toContain(
-          `https://raw.githubusercontent.com/${Brand.scoopBucketRepository}/main/bucket/${Brand.packageName}.json`,
-        )
+        expect(result).toBe("0.0.0-ci.23.1")
+        expect(scoopCalls).toContain(`${Brand.websiteURL}/downloads/entrox-dev/latest.json`)
       }),
     )
 
@@ -151,48 +156,25 @@ describe("installation", () => {
         }),
     )
 
-    testEffect(
-      testLayer(
-        () => jsonResponse({}),
-        (cmd, args) => {
-          if (
-            cmd === "brew" &&
-            args.includes("info") &&
-            args.includes(`${Brand.homebrewTapName}/${Brand.packageName}`)
-          ) {
-            return JSON.stringify({ formulae: [{ versions: { stable: "2.0.0" } }] })
-          }
-          return ""
-        },
-      ),
-    ).effect("reads brew versions from the Entrox tap formula", () =>
-      Effect.gen(function* () {
-        const result = yield* Installation.use.latest("brew")
-        expect(result).toBe("2.0.0")
-      }),
-    )
-
     const brewCalls: string[] = []
+    const brewHttpCalls: string[] = []
     testEffect(
       testLayer(
-        () => jsonResponse({}),
+        (request) => {
+          brewHttpCalls.push(request.url)
+          return jsonResponse({ version: "0.0.0-ci.23.1" })
+        },
         (cmd, args) => {
           if (cmd === "brew") brewCalls.push(args.join(" "))
-          if (
-            cmd === "brew" &&
-            args.includes("info") &&
-            args.includes(`${Brand.homebrewTapName}/${Brand.packageName}`)
-          ) {
-            return JSON.stringify({ formulae: [{ versions: { stable: "2.1.0" } }] })
-          }
           return ""
         },
       ),
-    ).effect("does not probe upstream brew taps while resolving versions", () =>
+    ).effect("reads brew installer versions from the Entrox dev manifest", () =>
       Effect.gen(function* () {
         const result = yield* Installation.use.latest("brew")
-        expect(result).toBe("2.1.0")
-        expect(brewCalls.some((call) => call.includes("anomalyco") || call.includes("opencode"))).toBe(false)
+        expect(result).toBe("0.0.0-ci.23.1")
+        expect(brewHttpCalls).toContain(`${Brand.websiteURL}/downloads/entrox-dev/latest.json`)
+        expect(brewCalls).toEqual([])
       }),
     )
   })

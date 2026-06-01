@@ -142,8 +142,19 @@ export const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProce
     })
 
     const getEntroxDevManifestURL = () => new URL("/downloads/entrox-dev/latest.json", Brand.installURL).toString()
+    const entroxDevManifestMethods: readonly Method[] = ["curl", "brew", "scoop", "unknown"]
 
     const isEntroxMovingDevVersion = (target: string) => /^0\.0\.0-ci\./.test(target)
+
+    const shouldReadEntroxDevManifest = (method: Method) => entroxDevManifestMethods.includes(method)
+
+    const getEntroxDevManifestVersion = Effect.fnUntraced(function* () {
+      const response = yield* httpOk.execute(
+        HttpClientRequest.get(getEntroxDevManifestURL()).pipe(HttpClientRequest.acceptJson),
+      )
+      const data = yield* HttpClientResponse.schemaBodyJson(EntroxDevManifest)(response)
+      return data.version
+    })
 
     const upgradeFailure = (method: Method, result?: { code: number; stdout: string; stderr: string }) => {
       if (method === "choco") return "not running from an elevated command shell"
@@ -246,13 +257,7 @@ export const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProce
       latest: Effect.fn("Installation.latest")(function* (installMethod?: Method) {
         const detectedMethod = installMethod || (yield* result.method())
 
-        if (detectedMethod === "curl") {
-          const response = yield* httpOk.execute(
-            HttpClientRequest.get(getEntroxDevManifestURL()).pipe(HttpClientRequest.acceptJson),
-          )
-          const data = yield* HttpClientResponse.schemaBodyJson(EntroxDevManifest)(response)
-          return data.version
-        }
+        if (shouldReadEntroxDevManifest(detectedMethod)) return yield* getEntroxDevManifestVersion()
 
         if (detectedMethod === "brew") {
           const formula = yield* getBrewFormula()

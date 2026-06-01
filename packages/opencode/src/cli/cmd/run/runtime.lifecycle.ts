@@ -101,6 +101,20 @@ function shutdown(renderer: CliRenderer): void {
   }
 }
 
+type ReplayResetRenderer = {
+  resetSplitFooterForReplay?: (options: { clearSavedLines: boolean }) => void
+  resetSplitScrollback?: (seedRows?: number) => void
+}
+
+function resetRendererForReplay(renderer: CliRenderer): void {
+  const target = renderer as unknown as ReplayResetRenderer
+  if (target.resetSplitFooterForReplay) {
+    target.resetSplitFooterForReplay({ clearSavedLines: true })
+    return
+  }
+  target.resetSplitScrollback?.(0)
+}
+
 function splashInfo(title: string | undefined, history: RunPrompt[]) {
   if (title && !SessionApi.isDefaultTitle(title)) {
     return {
@@ -335,7 +349,7 @@ export async function createRuntimeLifecycle(input: LifecycleInput): Promise<Lif
             }
 
             footer.resetForReplay(true)
-            renderer.resetSplitFooterForReplay({ clearSavedLines: true })
+            resetRendererForReplay(renderer)
             const splash = splashInfo(next.sessionTitle ?? input.sessionTitle, next.history)
             renderer.writeToScrollback(
               entrySplash({
