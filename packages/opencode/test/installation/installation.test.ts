@@ -68,12 +68,19 @@ describe("installation", () => {
         }),
     )
 
-    testEffect(testLayer(() => jsonResponse({ tag_name: "v4.0.0-beta.1" }))).effect(
-      "strips v prefix from GitHub release tag",
+    const curlCalls: string[] = []
+    testEffect(
+      testLayer((request) => {
+        curlCalls.push(request.url)
+        return jsonResponse({ version: "0.0.0-ci.22.1" })
+      }),
+    ).effect(
+      "reads curl installer versions from the Entrox dev manifest",
       () =>
         Effect.gen(function* () {
           const result = yield* Installation.use.latest("curl")
-          expect(result).toBe("4.0.0-beta.1")
+          expect(result).toBe("0.0.0-ci.22.1")
+          expect(curlCalls).toContain(`${Brand.websiteURL}/downloads/entrox-dev/latest.json`)
         }),
     )
 

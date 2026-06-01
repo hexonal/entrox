@@ -85,6 +85,7 @@ const ChocoPackage = Schema.Struct({
   d: Schema.Struct({ results: Schema.Array(Schema.Struct({ Version: Schema.String })) }),
 })
 const ScoopManifest = NpmPackage
+const EntroxDevManifest = Schema.Struct({ version: Schema.String })
 
 export interface Interface {
   readonly info: () => Effect.Effect<Info>
@@ -140,6 +141,10 @@ export const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProce
       return `${Brand.homebrewTapName}/${Brand.packageName}`
     })
 
+    const getEntroxDevManifestURL = () => new URL("/downloads/entrox-dev/latest.json", Brand.installURL).toString()
+
+    const isEntroxMovingDevVersion = (target: string) => /^0\.0\.0-ci\./.test(target)
+
     const upgradeFailure = (method: Method, result?: { code: number; stdout: string; stderr: string }) => {
       if (method === "choco") return "not running from an elevated command shell"
       if (result) return `Upgrade failed for ${method} (exit code ${result.code}).`
@@ -154,7 +159,7 @@ export const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProce
         const result = yield* appProcess.run(
           ChildProcess.make("bash", [], {
             stdin: Stream.make(bodyBytes),
-            env: { VERSION: target },
+            env: isEntroxMovingDevVersion(target) ? {} : { VERSION: target },
             extendEnv: true,
           }),
         )
@@ -240,6 +245,14 @@ export const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProce
       }),
       latest: Effect.fn("Installation.latest")(function* (installMethod?: Method) {
         const detectedMethod = installMethod || (yield* result.method())
+
+        if (detectedMethod === "curl") {
+          const response = yield* httpOk.execute(
+            HttpClientRequest.get(getEntroxDevManifestURL()).pipe(HttpClientRequest.acceptJson),
+          )
+          const data = yield* HttpClientResponse.schemaBodyJson(EntroxDevManifest)(response)
+          return data.version
+        }
 
         if (detectedMethod === "brew") {
           const formula = yield* getBrewFormula()
