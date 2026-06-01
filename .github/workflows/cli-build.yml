@@ -158,112 +158,23 @@ jobs:
             --title "Entrox Dev Build" \
             --notes-file release-notes.md
 
-      - name: Update Homebrew dev formula
+      - name: Trigger package index sync
         if: steps.committer.conclusion == 'success'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ steps.committer.outputs.token }}
-          HOMEBREW_TAP_REPO: hexonal/homebrew-entrox
-          TAG_NAME: entrox-dev
         run: |
           set -euo pipefail
-          macos_arm64_asset="entrox-cli-macos-arm64.zip"
-          linux_x64_asset="entrox-cli-linux-x64.zip"
-          macos_arm64_hash="$(sha256sum "release-assets/${macos_arm64_asset}" | cut -d' ' -f1)"
-          linux_x64_hash="$(sha256sum "release-assets/${linux_x64_asset}" | cut -d' ' -f1)"
-          export MACOS_ARM64_HASH="$macos_arm64_hash"
-          export LINUX_X64_HASH="$linux_x64_hash"
-          rm -rf homebrew-tap
-          git clone "https://x-access-token:${GH_TOKEN}@github.com/${HOMEBREW_TAP_REPO}.git" homebrew-tap
-          mkdir -p homebrew-tap/Formula
-          python3 - <<'PY'
-          import os
-          import pathlib
-          import textwrap
-
-          formula = f"""\
-          # typed: false
-          # frozen_string_literal: true
-
-          class Entrox < Formula
-            desc "Entrox CLI"
-            homepage "https://entrox.996icu.wiki"
-            version "{os.environ['OPENCODE_VERSION']}"
-            license "MIT"
-
-            on_macos do
-              depends_on arch: :arm64
-
-              url "https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/{os.environ['TAG_NAME']}/entrox-cli-macos-arm64.zip"
-              sha256 "{os.environ['MACOS_ARM64_HASH']}"
-            end
-
-            on_linux do
-              depends_on arch: :x86_64
-
-              url "https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/{os.environ['TAG_NAME']}/entrox-cli-linux-x64.zip"
-              sha256 "{os.environ['LINUX_X64_HASH']}"
-            end
-
-            depends_on "ripgrep"
-
-            def install
-              bin.install "bin/entrox"
-            end
-
-            test do
-              system "#{{bin}}/entrox", "--version"
-            end
-          end
-          """
-          pathlib.Path("homebrew-tap/Formula/entrox.rb").write_text(textwrap.dedent(formula))
-          PY
-          cd homebrew-tap
-          git add Formula/entrox.rb
-          if ! git diff --cached --quiet; then
-            git commit -m "Update Entrox dev Homebrew formula"
-            git push origin HEAD:main
-          fi
-
-      - name: Update Scoop dev manifest
-        if: steps.committer.conclusion == 'success'
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ steps.committer.outputs.token }}
-          SCOOP_BUCKET_REPO: hexonal/scoop-entrox
-          TAG_NAME: entrox-dev
-        run: |
-          set -euo pipefail
-          win_asset="entrox-cli-windows-x64.zip"
-          win_hash="$(sha256sum "release-assets/${win_asset}" | cut -d' ' -f1)"
-          export WIN_HASH="$win_hash"
-          rm -rf scoop-bucket
-          git clone "https://x-access-token:${GH_TOKEN}@github.com/${SCOOP_BUCKET_REPO}.git" scoop-bucket
-          mkdir -p scoop-bucket/bucket
-          python3 - <<'PY'
-          import json
-          import os
-          import pathlib
-
-          manifest = {
-              "version": os.environ["OPENCODE_VERSION"],
-              "description": "Entrox CLI",
-              "homepage": "https://entrox.996icu.wiki",
-              "license": "MIT",
-              "architecture": {
-                  "64bit": {
-                      "url": f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/{os.environ['TAG_NAME']}/entrox-cli-windows-x64.zip",
-                      "hash": os.environ["WIN_HASH"],
-                  }
-              },
-              "bin": r"bin\entrox.exe",
+          dispatch() {
+            local repo="$1"
+            local event_type="$2"
+            curl -fsS -X POST \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${repo}/dispatches" \
+              -d "{\"event_type\":\"${event_type}\",\"client_payload\":{\"source_repository\":\"${GITHUB_REPOSITORY}\",\"source_sha\":\"${GITHUB_SHA}\",\"version\":\"${OPENCODE_VERSION}\"}}"
           }
-          path = pathlib.Path("scoop-bucket/bucket/entrox.json")
-          path.write_text(json.dumps(manifest, indent=2) + "\n")
-          PY
-          cd scoop-bucket
-          git add bucket/entrox.json
-          if ! git diff --cached --quiet; then
-            git commit -m "Update Entrox dev Scoop manifest"
-            git push origin HEAD:main
-          fi
+
+          dispatch "hexonal/homebrew-entrox" "sync-dev-formula"
+          dispatch "hexonal/scoop-entrox" "sync-dev-manifest"
