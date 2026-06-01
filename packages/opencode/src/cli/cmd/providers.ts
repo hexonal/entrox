@@ -17,6 +17,8 @@ import { errorMessage } from "@/util/error"
 import { text } from "node:stream/consumers"
 import { Effect, Option } from "effect"
 import { Brand } from "@/brand"
+import { normalizeGatewayURL } from "@/gateway/sub2api"
+import { createGatewayServiceStores, syncGateway } from "@/gateway/sync"
 
 type PluginAuth = NonNullable<Hooks["auth"]>
 type WellKnownMetadata = {
@@ -58,6 +60,7 @@ const wellKnownLogin = Effect.fn("Cli.providers.wellKnownLogin")(function* (inpu
     )
     if (action === "keep") {
       yield* Prompt.log.success(`Using existing ${displayCredentialName(url)} login`)
+      yield* syncGatewayAfterWellKnownLogin(url)
       yield* Prompt.outro("Done")
       return
     }
@@ -86,7 +89,33 @@ const wellKnownLogin = Effect.fn("Cli.providers.wellKnownLogin")(function* (inpu
   }
   yield* Effect.orDie(authSvc.set(url, { type: "wellknown", key: wellknown.auth.env, token: token.trim() }))
   yield* Prompt.log.success("Logged into " + url)
+  yield* syncGatewayAfterWellKnownLogin(url, token.trim())
   yield* Prompt.outro("Done")
+})
+
+const syncGatewayAfterWellKnownLogin = Effect.fn("Cli.providers.syncGatewayAfterWellKnownLogin")(function* (
+  url: string,
+  token?: string,
+) {
+  if (normalizeGatewayURL(url) !== normalizeGatewayURL(Brand.authProviderURL)) return
+
+  const auth = yield* Auth.Service
+  const config = yield* Config.Service
+  yield* Effect.tryPromise({
+    try: () => syncGateway({ ...createGatewayServiceStores({ auth, config }), baseUrl: url, token }),
+    catch: errorMessage,
+  }).pipe(
+    Effect.tap((result) =>
+      result.summary.failedCount > 0
+        ? Prompt.log.warn(
+            `Gateway sync completed with ${result.summary.failedCount} failure${
+              result.summary.failedCount === 1 ? "" : "s"
+            }`,
+          )
+        : Prompt.log.success(`Synced ${result.summary.providerCount} gateway provider${result.summary.providerCount === 1 ? "" : "s"}`),
+    ),
+    Effect.catch((message: string) => Prompt.log.warn(`Gateway sync skipped: ${message}`)),
+  )
 })
 
 function displayCredentialName(key: string) {

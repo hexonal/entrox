@@ -23,6 +23,7 @@ import { McpCommand } from "./cli/cmd/mcp"
 import { GithubCommand } from "./cli/cmd/github"
 import { ExportCommand } from "./cli/cmd/export"
 import { ImportCommand } from "./cli/cmd/import"
+import { GatewayCommand } from "./cli/cmd/gateway"
 import { AttachCommand } from "./cli/cmd/tui/attach"
 import { TuiThreadCommand } from "./cli/cmd/tui/thread"
 import { AcpCommand } from "./cli/cmd/acp"
@@ -179,6 +180,7 @@ const cli = yargs(args)
   .command(ExportCommand)
   .command(ImportCommand)
   .command(GithubCommand)
+  .command(GatewayCommand)
   .command(PrCommand)
   .command(SessionCommand)
   .command(PluginCommand)
