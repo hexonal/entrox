@@ -128,12 +128,12 @@ elif [ -d "$ENTROX_HOMEBREW_TAP" ]; then
 fi
 HOMEBREW_NO_AUTO_UPDATE=1 brew tap hexonal/entrox
 (HOMEBREW_NO_AUTO_UPDATE=1 brew trust hexonal/entrox || true)
-HOMEBREW_NO_AUTO_UPDATE=1 brew install hexonal/entrox/entrox`}>
+HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade hexonal/entrox/entrox || HOMEBREW_NO_AUTO_UPDATE=1 brew install hexonal/entrox/entrox`}>
           <code>
             <span>repair tap</span> <span class="highlight">hexonal/entrox</span><br />
             <span>HOMEBREW_NO_AUTO_UPDATE=1 brew tap</span> <span class="highlight">hexonal/entrox</span><br />
             <span>HOMEBREW_NO_AUTO_UPDATE=1 brew trust</span> <span class="highlight">hexonal/entrox</span><br />
-            <span>brew install</span> <span class="highlight">hexonal/entrox/entrox</span>
+            <span>brew upgrade || install</span> <span class="highlight">hexonal/entrox/entrox</span>
           </code>
           <span class="copy">
             <CopyIcon />

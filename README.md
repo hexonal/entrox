@@ -17,7 +17,7 @@ elif [ -d "$ENTROX_HOMEBREW_TAP" ]; then
 fi
 HOMEBREW_NO_AUTO_UPDATE=1 brew tap hexonal/entrox
 (HOMEBREW_NO_AUTO_UPDATE=1 brew trust hexonal/entrox || true)
-HOMEBREW_NO_AUTO_UPDATE=1 brew install hexonal/entrox/entrox
+HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade hexonal/entrox/entrox || HOMEBREW_NO_AUTO_UPDATE=1 brew install hexonal/entrox/entrox
 ```
 
 ### Windows (Scoop)

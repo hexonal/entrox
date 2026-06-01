@@ -138,9 +138,9 @@ export default function Download() {
                 </code>
                 <CopyStatus />
               </button>
-              <button data-component="cli-row" onClick={handleCopyClick("brew install hexonal/tap/entrox")}>
+              <button data-component="cli-row" onClick={handleCopyClick("brew install hexonal/entrox/entrox")}>
                 <code>
-                  brew install <strong>hexonal/tap/entrox</strong>
+                  brew install <strong>hexonal/entrox/entrox</strong>
                 </code>
                 <CopyStatus />
               </button>

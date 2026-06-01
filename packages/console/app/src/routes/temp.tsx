@@ -132,7 +132,7 @@ export default function Home() {
             <h3 data-component="title">homebrew</h3>
             <button data-copy data-slot="button">
               <span>
-                brew install <strong>{publicBrand.command}</strong>
+                brew install <strong>hexonal/entrox/entrox</strong>
               </span>
               <CopyStatus />
             </button>
