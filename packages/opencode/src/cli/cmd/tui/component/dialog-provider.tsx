@@ -292,7 +292,7 @@ function WellKnownMethod(props: { url: string }) {
       const metadata: unknown = await response.json()
       if (!isWellKnownMetadata(metadata)) throw new Error("Metadata response is missing auth.command or auth.env")
 
-      toast.show({ variant: "info", message: `Running ${metadata.auth.command.join(" ")}` })
+      toast.show({ variant: "info", message: "Opening browser authorization" })
       const result = await Process.text(metadata.auth.command)
       const token = result.text.trim()
       if (!token) throw new Error("Authorization command did not return a token")

@@ -96,6 +96,120 @@ jobs:
           PY
           ls -lh release-assets
 
+      - name: Create release manifest
+        env:
+          ALIYUN_OSS_PUBLIC_BASE_URL: ${{ vars.ALIYUN_OSS_PUBLIC_BASE_URL }}
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+
+          output = pathlib.Path("release-assets")
+          public_base_url = os.environ.get("ALIYUN_OSS_PUBLIC_BASE_URL", "").rstrip("/")
+          assets = []
+          checksum_lines = []
+          for path in sorted(output.glob("*.zip")):
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              checksum_lines.append(f"{digest}  {path.name}")
+              item = {
+                  "name": path.name,
+                  "sha256": digest,
+                  "size": path.stat().st_size,
+              }
+              if public_base_url:
+                  item["url"] = f"{public_base_url}/{path.name}"
+              assets.append(item)
+
+          (output / "SHA256SUMS").write_text("\n".join(checksum_lines) + "\n", encoding="utf-8")
+          manifest = {
+              "version": os.environ["OPENCODE_VERSION"],
+              "tag": "entrox-dev",
+              "commit": os.environ["GITHUB_SHA"],
+              "assets": assets,
+          }
+          if public_base_url:
+              manifest["download_base_url"] = public_base_url
+          (output / "latest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+          ls -lh release-assets
+
+      - name: Upload release assets to Aliyun OSS mirror
+        env:
+          ALIYUN_OSS_ACCESS_KEY_ID: ${{ secrets.ALIYUN_OSS_ACCESS_KEY_ID }}
+          ALIYUN_OSS_ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_OSS_ACCESS_KEY_SECRET }}
+          ALIYUN_OSS_BUCKET: ${{ vars.ALIYUN_OSS_BUCKET }}
+          ALIYUN_OSS_ENDPOINT: ${{ vars.ALIYUN_OSS_ENDPOINT }}
+          ALIYUN_OSS_PREFIX: ${{ vars.ALIYUN_OSS_PREFIX || 'entrox-dev' }}
+          ALIYUN_OSS_OBJECT_ACL: ${{ vars.ALIYUN_OSS_OBJECT_ACL || 'public-read' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ALIYUN_OSS_ACCESS_KEY_ID:-}" ] || \
+             [ -z "${ALIYUN_OSS_ACCESS_KEY_SECRET:-}" ] || \
+             [ -z "${ALIYUN_OSS_BUCKET:-}" ] || \
+             [ -z "${ALIYUN_OSS_ENDPOINT:-}" ]; then
+            echo "Aliyun OSS mirror is not configured; skipping upload."
+            exit 0
+          fi
+
+          python3 - <<'PY'
+          import base64
+          import email.utils
+          import hashlib
+          import hmac
+          import mimetypes
+          import os
+          import pathlib
+          import urllib.parse
+          import urllib.request
+
+          access_key_id = os.environ["ALIYUN_OSS_ACCESS_KEY_ID"]
+          access_key_secret = os.environ["ALIYUN_OSS_ACCESS_KEY_SECRET"]
+          bucket = os.environ["ALIYUN_OSS_BUCKET"].strip()
+          endpoint = os.environ["ALIYUN_OSS_ENDPOINT"].strip().rstrip("/")
+          prefix = os.environ.get("ALIYUN_OSS_PREFIX", "entrox-dev").strip("/")
+          object_acl = os.environ.get("ALIYUN_OSS_OBJECT_ACL", "public-read").strip()
+
+          parsed = urllib.parse.urlparse(endpoint if "://" in endpoint else f"https://{endpoint}")
+          scheme = parsed.scheme or "https"
+          endpoint_host = parsed.netloc or parsed.path
+          host = endpoint_host if endpoint_host.startswith(f"{bucket}.") else f"{bucket}.{endpoint_host}"
+
+          def put_object(path: pathlib.Path) -> None:
+              object_key = f"{prefix}/{path.name}" if prefix else path.name
+              quoted_key = urllib.parse.quote(object_key, safe="/")
+              url = f"{scheme}://{host}/{quoted_key}"
+              content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+              date = email.utils.formatdate(usegmt=True)
+              headers = {
+                  "Date": date,
+                  "Content-Type": content_type,
+                  "x-oss-object-acl": object_acl,
+              }
+              canonical_oss_headers = "".join(
+                  f"{key.lower()}:{value}\n"
+                  for key, value in sorted(headers.items())
+                  if key.lower().startswith("x-oss-")
+              )
+              canonical_resource = f"/{bucket}/{object_key}"
+              string_to_sign = f"PUT\n\n{content_type}\n{date}\n{canonical_oss_headers}{canonical_resource}"
+              signature = base64.b64encode(
+                  hmac.new(access_key_secret.encode(), string_to_sign.encode(), hashlib.sha1).digest()
+              ).decode()
+              headers["Authorization"] = f"OSS {access_key_id}:{signature}"
+              data = path.read_bytes()
+              request = urllib.request.Request(url, data=data, headers=headers, method="PUT")
+              with urllib.request.urlopen(request, timeout=600) as response:
+                  if response.status // 100 != 2:
+                      raise RuntimeError(f"upload failed for {path.name}: HTTP {response.status}")
+              print(f"uploaded {path.name} -> oss://{bucket}/{object_key}")
+
+          for path in sorted(pathlib.Path("release-assets").iterdir()):
+              if path.is_file():
+                  put_object(path)
+          PY
+
       - name: Publish dev prerelease
         env:
           GH_TOKEN: ${{ github.token }}
@@ -107,7 +221,22 @@ jobs:
 
           ## Install
 
-          ### macOS
+          ### macOS / Linux
+
+          ```bash
+          curl -fsSL https://entrox.996icu.wiki/install | bash
+          ```
+
+          ### Windows
+
+          ```powershell
+          irm https://entrox.996icu.wiki/install.ps1 | iex
+          ```
+
+          These installers download from `https://entrox.996icu.wiki/downloads/entrox-dev/...`.
+          Configure the Sub2API service with `ENTROX_DOWNLOAD_MIRROR_BASE_URL` to redirect those downloads to an Aliyun OSS/CDN mirror.
+
+          ### macOS fallback: Homebrew
 
           ```bash
           # Self-heals a corrupted local tap before installing.
@@ -116,7 +245,7 @@ jobs:
 
           For this dev build, download `entrox-cli-macos-arm64.zip`, unzip it, and move `bin/entrox` into a directory on your `PATH`.
 
-          ### Linux
+          ### Linux fallback: manual
 
           Download `entrox-cli-linux-x64.zip`, unzip it, and move `bin/entrox` into a directory on your `PATH`.
 
@@ -127,7 +256,7 @@ jobs:
           entrox --version
           ```
 
-          ### Windows
+          ### Windows fallback: Scoop
 
           ```powershell
           Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
@@ -141,7 +270,7 @@ jobs:
           sed -i "s/\${GITHUB_SHA}/${GITHUB_SHA}/g" release-notes.md
           sed -i "s/\${OPENCODE_VERSION}/${OPENCODE_VERSION}/g" release-notes.md
           gh release delete "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
-          gh release create "$TAG_NAME" release-assets/*.zip \
+          gh release create "$TAG_NAME" release-assets/* \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --prerelease \

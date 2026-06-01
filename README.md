@@ -4,21 +4,22 @@ Entrox is an AI coding agent for terminal, desktop, and automation workflows.
 
 ## Installation
 
-### macOS / Linux (Homebrew)
+### macOS / Linux
 
 ```bash
-# Self-heals a corrupted local tap before installing.
-ENTROX_HOMEBREW_TAP="$(brew --repository)/Library/Taps/hexonal/homebrew-entrox"; if [ -d "$ENTROX_HOMEBREW_TAP/.git" ]; then (git -C "$ENTROX_HOMEBREW_TAP" fetch origin && git -C "$ENTROX_HOMEBREW_TAP" reset --hard origin/main && git -C "$ENTROX_HOMEBREW_TAP" clean -fd) || rm -rf "$ENTROX_HOMEBREW_TAP"; elif [ -d "$ENTROX_HOMEBREW_TAP" ]; then rm -rf "$ENTROX_HOMEBREW_TAP"; fi; HOMEBREW_NO_AUTO_UPDATE=1 brew tap hexonal/entrox; (HOMEBREW_NO_AUTO_UPDATE=1 brew trust hexonal/entrox || true); HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade hexonal/entrox/entrox || HOMEBREW_NO_AUTO_UPDATE=1 brew install hexonal/entrox/entrox
+curl -fsSL https://entrox.996icu.wiki/install | bash
 ```
 
-### Windows (Scoop)
+### Windows
 
 ```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
-scoop bucket add entrox https://github.com/hexonal/scoop-entrox
-scoop install entrox
+irm https://entrox.996icu.wiki/install.ps1 | iex
 ```
+
+The official installers download from the Entrox service download endpoint, so
+deployments can route binaries through an OSS/CDN mirror without requiring users
+to access GitHub directly. Homebrew and Scoop remain fallback package-manager
+options.
 
 For local testing from this repository, build the CLI package and run the
 generated `entrox` binary.

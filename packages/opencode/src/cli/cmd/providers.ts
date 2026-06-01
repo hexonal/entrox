@@ -71,7 +71,7 @@ const wellKnownLogin = Effect.fn("Cli.providers.wellKnownLogin")(function* (inpu
       return x.json()
     }),
   )) as WellKnownMetadata
-  yield* Prompt.log.info(`Running \`${wellknown.auth.command.join(" ")}\``)
+  yield* Prompt.log.info("Opening browser authorization")
   const abort = new AbortController()
   const proc = Process.spawn(wellknown.auth.command, { stdout: "pipe", stderr: "inherit", abort: abort.signal })
   if (!proc.stdout) {
