@@ -147,6 +147,62 @@ jobs:
             --title "Entrox Dev Build" \
             --notes-file release-notes.md
 
+      - name: Update Homebrew dev formula
+        env:
+          GH_TOKEN: ${{ steps.committer.outputs.token }}
+          HOMEBREW_TAP_REPO: hexonal/homebrew-entrox
+          TAG_NAME: entrox-dev
+        run: |
+          set -euo pipefail
+          macos_arm64_asset="entrox-cli-macos-arm64.zip"
+          linux_x64_asset="entrox-cli-linux-x64.zip"
+          macos_arm64_hash="$(sha256sum "release-assets/${macos_arm64_asset}" | cut -d' ' -f1)"
+          linux_x64_hash="$(sha256sum "release-assets/${linux_x64_asset}" | cut -d' ' -f1)"
+          rm -rf homebrew-tap
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${HOMEBREW_TAP_REPO}.git" homebrew-tap
+          mkdir -p homebrew-tap/Formula
+          cat > homebrew-tap/Formula/entrox.rb <<EOF
+          # typed: false
+          # frozen_string_literal: true
+
+          class Entrox < Formula
+            desc "Entrox CLI"
+            homepage "https://entrox.996icu.wiki"
+            version "${OPENCODE_VERSION}"
+            license "MIT"
+
+            on_macos do
+              depends_on arch: :arm64
+
+              url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG_NAME}/entrox-cli-macos-arm64.zip"
+              sha256 "${macos_arm64_hash}"
+            end
+
+            on_linux do
+              depends_on arch: :x86_64
+
+              url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG_NAME}/entrox-cli-linux-x64.zip"
+              sha256 "${linux_x64_hash}"
+            end
+
+            depends_on "ripgrep"
+
+            def install
+              bin.install "bin/entrox"
+            end
+
+            test do
+              system "#{bin}/entrox", "--version"
+            end
+          end
+          EOF
+          cd homebrew-tap
+          git add Formula/entrox.rb
+          if ! git diff --cached --quiet; then
+            git commit -m "Update Entrox dev Homebrew formula"
+            git push origin HEAD:main
+          fi
+
       - name: Update Scoop dev manifest
         env:
           GH_TOKEN: ${{ steps.committer.outputs.token }}
