@@ -26,11 +26,11 @@ jobs:
       matrix:
         settings:
           - name: linux-x64
-            host: blacksmith-4vcpu-ubuntu-2404
+            host: ubuntu-24.04
           - name: macos-arm64
             host: macos-26
           - name: windows-x64
-            host: blacksmith-4vcpu-windows-2025
+            host: windows-2025
     runs-on: ${{ matrix.settings.host }}
     defaults:
       run:
