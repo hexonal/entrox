@@ -3,6 +3,7 @@ import { createMemo, For, type Accessor } from "solid-js"
 import { DEFAULT_THEMES, useTheme } from "@tui/context/theme"
 import { useCommandShortcut } from "../../keymap"
 import { Brand } from "@/brand"
+import { UPDATE_AVAILABLE_VERSION_KEY } from "../../update-notice"
 
 const themeCount = Object.keys(DEFAULT_THEMES).length
 
@@ -134,6 +135,10 @@ export function Tips(props: { api: TuiPluginApi; connected?: boolean }) {
     themeList: useCommandShortcut("theme.switch"),
   }
   const tip = createMemo(() => {
+    const updateVersion = props.api.kv.get<string | undefined>(UPDATE_AVAILABLE_VERSION_KEY)
+    if (updateVersion) {
+      return `Update available: run {highlight}${Brand.command} upgrade{/highlight} to install v${updateVersion}`
+    }
     if (props.connected === false) return NO_MODELS_TIP
     const tips = TIPS.flatMap((item) => {
       const value = typeof item === "string" ? item : item(shortcuts)

@@ -49,8 +49,6 @@ import { Session } from "@tui/routes/session"
 import { PromptHistoryProvider } from "./component/prompt/history"
 import { FrecencyProvider } from "./component/prompt/frecency"
 import { PromptStashProvider } from "./component/prompt/stash"
-import { DialogAlert } from "./ui/dialog-alert"
-import { DialogConfirm } from "./ui/dialog-confirm"
 import { ToastProvider, useToast } from "./ui/toast"
 import { createExit, ExitProvider, useExit, type Exit } from "./context/exit"
 import { Session as SessionApi } from "@/session/session"
@@ -80,6 +78,7 @@ import {
 import type { EventSource } from "./context/sdk"
 import { DialogVariant } from "./component/dialog-variant"
 import { Brand } from "@/brand"
+import { UPDATE_AVAILABLE_VERSION_KEY, UPDATE_SKIPPED_VERSION_KEY } from "./update-notice"
 
 const appGlobalBindingCommands = [
   "session.list",
@@ -1001,52 +1000,29 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
     })
   })
 
-  event.on("installation.update-available", async (evt) => {
-    console.log("installation.update-available", evt)
+  event.on("installation.update-available", (evt) => {
     const version = evt.properties.version
 
-    const skipped = kv.get("skipped_version")
+    const skipped = kv.get(UPDATE_SKIPPED_VERSION_KEY)
     if (skipped && !semver.gt(version, skipped)) return
 
-    const choice = await DialogConfirm.show(
-      dialog,
-      `Update Available`,
-      `A new release v${version} is available. Would you like to update now?`,
-      "skip",
-    )
-
-    if (choice === false) {
-      kv.set("skipped_version", version)
-      return
-    }
-
-    if (choice !== true) return
-
+    kv.set(UPDATE_AVAILABLE_VERSION_KEY, version)
     toast.show({
       variant: "info",
-      message: `Updating to v${version}...`,
-      duration: 30000,
+      title: "Update available",
+      message: `Run ${Brand.command} upgrade to install v${version}`,
+      duration: 10000,
     })
+  })
 
-    const result = await sdk.client.global.upgrade({ target: version })
-
-    if (result.error || !result.data?.success) {
-      toast.show({
-        variant: "error",
-        title: "Update Failed",
-        message: "Update failed",
-        duration: 10000,
-      })
-      return
-    }
-
-    await DialogAlert.show(
-      dialog,
-      "Update Complete",
-      `Successfully updated to ${Brand.display} v${result.data.version}. Please restart the application.`,
-    )
-
-    void exit()
+  event.on("installation.updated", (evt) => {
+    kv.set(UPDATE_AVAILABLE_VERSION_KEY, undefined)
+    toast.show({
+      variant: "info",
+      title: "Update complete",
+      message: `Updated to ${Brand.display} v${evt.properties.version}. Restart ${Brand.command} to use it.`,
+      duration: 10000,
+    })
   })
 
   const plugin = createMemo(() => {

@@ -3,6 +3,7 @@ import type { InternalTuiPlugin } from "../../plugin/internal"
 import { createMemo, Show } from "solid-js"
 import { Tips } from "./tips-view"
 import { useBindings } from "../../keymap"
+import { UPDATE_AVAILABLE_VERSION_KEY } from "../../update-notice"
 
 const id = "internal:home-tips"
 
@@ -44,7 +45,8 @@ const tui: TuiPlugin = async (api) => {
             (item) => item.id !== "opencode" || Object.values(item.models).some((model) => model.cost?.input !== 0),
           ),
         )
-        const show = createMemo(() => (!first() || !connected()) && !hidden())
+        const updateVersion = createMemo(() => api.kv.get<string | undefined>(UPDATE_AVAILABLE_VERSION_KEY))
+        const show = createMemo(() => !!updateVersion() || ((!first() || !connected()) && !hidden()))
         return <View api={api} hidden={hidden()} show={show()} connected={connected()} />
       },
     },
