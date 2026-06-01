@@ -140,7 +140,9 @@ async function syncGatewayFromAPIKey(input: GatewaySyncInput & {
     throw new Error("No Entrox gateway models are available for this API key")
   }
 
-  await Promise.all(providerEntries.map(([providerId]) => input.auth.set(providerId, { type: "api", key: input.apiKey })))
+  for (const [providerId] of providerEntries) {
+    await input.auth.set(providerId, { type: "api", key: input.apiKey })
+  }
   await writeProviderConfig({
     config: input.config,
     providerConfigs: Object.fromEntries(providerEntries),

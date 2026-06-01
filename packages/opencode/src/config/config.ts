@@ -10,7 +10,7 @@ import { NamedError } from "@opencode-ai/core/util/error"
 import { Flag } from "@opencode-ai/core/flag/flag"
 import { Auth } from "../auth"
 import { Env } from "../env"
-import { applyEdits, modify } from "jsonc-parser"
+import { applyEdits, findNodeAtLocation, modify, parseTree } from "jsonc-parser"
 import { InstallationLocal, InstallationVersion } from "@opencode-ai/core/installation/version"
 import { existsSync } from "fs"
 import { Account } from "@/account/account"
@@ -360,6 +360,7 @@ function globalConfigFile() {
 
 function patchJsonc(input: string, patch: unknown, path: string[] = []): string {
   if (!isRecord(patch)) {
+    if (patch === undefined && !jsoncPathExists(input, path)) return input
     const edits = modify(input, path, patch, {
       formattingOptions: {
         insertSpaces: true,
@@ -370,6 +371,12 @@ function patchJsonc(input: string, patch: unknown, path: string[] = []): string 
   }
 
   return Object.entries(patch).reduce((result, [key, value]) => patchJsonc(result, value, [...path, key]), input)
+}
+
+function jsoncPathExists(input: string, path: string[]) {
+  const tree = parseTree(input)
+  if (!tree) return false
+  return findNodeAtLocation(tree, path) !== undefined
 }
 
 function writable(info: Info) {

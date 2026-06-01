@@ -61,6 +61,34 @@ describe("gateway sync", () => {
     })
   })
 
+  test("persists all remote provider auth records when auth writes replace the file", async () => {
+    const auth = createReplacingAuthStore()
+    const config = createConfigStore()
+
+    await syncGateway({
+      token: "sk-login",
+      auth,
+      config,
+      fetch: createRemoteConfigFetch({
+        provider: {
+          entrox: {
+            npm: "@ai-sdk/openai-compatible",
+            name: "Entrox",
+            models: { "gpt-5": { name: "GPT-5" } },
+          },
+          "entrox-anthropic": {
+            npm: "@ai-sdk/anthropic",
+            name: "Entrox",
+            models: { "claude-sonnet-4": { name: "Claude Sonnet 4" } },
+          },
+        },
+      }),
+    })
+
+    expect(auth.records.entrox).toEqual({ type: "api", key: "sk-login" })
+    expect(auth.records["entrox-anthropic"]).toEqual({ type: "api", key: "sk-login" })
+  })
+
   test("syncs active groups into provider auth and config", async () => {
     const auth = createAuthStore()
     const config = createConfigStore()
@@ -173,6 +201,24 @@ function createAuthStore(initial: Record<string, AuthRecord> = {}) {
     all: async () => records,
     set: async (key: string, info: AuthRecord) => {
       records[key] = info
+    },
+    remove: async (key: string) => {
+      delete records[key]
+    },
+  }
+}
+
+function createReplacingAuthStore(initial: Record<string, AuthRecord> = {}) {
+  const records = { ...initial }
+  return {
+    records,
+    all: async () => records,
+    set: async (key: string, info: AuthRecord) => {
+      const snapshot = { ...records }
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      snapshot[key] = info
+      for (const existingKey of Object.keys(records)) delete records[existingKey]
+      Object.assign(records, snapshot)
     },
     remove: async (key: string) => {
       delete records[key]

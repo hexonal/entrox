@@ -396,6 +396,31 @@ it.effect("updates global config and omits empty shell key in jsonc", () =>
   ),
 )
 
+it.effect("updates global jsonc config when deleting a missing nested key", () =>
+  withGlobalConfig({ config: { model: "test/model" }, name: "opencode.jsonc" }, ({ dir }) =>
+    Effect.gen(function* () {
+      yield* Config.use.updateGlobal(({
+        provider: {
+          sub2api: undefined,
+          entrox: {
+            npm: "@ai-sdk/openai-compatible",
+            name: "Entrox",
+            options: { baseURL: "https://example.test/v1" },
+            models: { "gpt-5": { name: "GPT-5" } },
+          },
+        },
+      } as unknown) as Config.Info)
+
+      const file = path.join(dir, "opencode.jsonc")
+      const writtenConfig = yield* AppFileSystem.use.readFileString(file)
+      const parsed = ConfigParse.schema(Config.Info, ConfigParse.jsonc(writtenConfig, file), file)
+      expect(parsed.provider?.sub2api).toBeUndefined()
+      expect(parsed.provider?.entrox?.models?.["gpt-5"]?.name).toBe("GPT-5")
+      expect(parsed.model).toBe("test/model")
+    }),
+  ),
+)
+
 it.instance(
   "loads formatter boolean config",
   Effect.gen(function* () {
