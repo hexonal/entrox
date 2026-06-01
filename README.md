@@ -4,14 +4,19 @@ Entrox is an AI coding agent for terminal, desktop, and automation workflows.
 
 ## Installation
 
+### macOS / Linux (Homebrew)
+
 ```bash
 brew tap hexonal/entrox
-brew install entrox
+(brew trust hexonal/entrox || true)
+HOMEBREW_NO_AUTO_UPDATE=1 brew install hexonal/entrox/entrox
 ```
 
-Other package-manager distribution is generated from GitHub releases:
+### Windows (Scoop)
 
-```bash
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
 scoop bucket add entrox https://github.com/hexonal/scoop-entrox
 scoop install entrox
 ```

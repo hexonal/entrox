@@ -228,5 +228,25 @@ describe("installation", () => {
         expect(error.stderr).not.toContain("script output")
       }),
     )
+
+    const brewUpgradeCalls: string[] = []
+    testEffect(
+      testLayer(
+        () => jsonResponse({}),
+        (cmd, args) => {
+          if (cmd === "brew") brewUpgradeCalls.push(args.join(" "))
+          return ""
+        },
+      ),
+    ).effect("trusts the Entrox tap before brew upgrades", () =>
+      Effect.gen(function* () {
+        yield* Installation.use.upgrade("brew", "9.9.9")
+
+        expect(brewUpgradeCalls).toEqual([
+          `trust ${Brand.homebrewTapName}`,
+          `upgrade ${Brand.homebrewTapName}/${Brand.packageName}`,
+        ])
+      }),
+    )
   })
 })

@@ -313,6 +313,7 @@ export const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProce
           case "brew": {
             const formula = yield* getBrewFormula()
             const env = { HOMEBREW_NO_AUTO_UPDATE: "1" }
+            yield* run(["brew", "trust", Brand.homebrewTapName], { env })
             upgradeResult = yield* run(["brew", "upgrade", formula], { env })
             break
           }
