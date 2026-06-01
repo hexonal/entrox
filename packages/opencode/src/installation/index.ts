@@ -137,9 +137,7 @@ export const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProce
     )
 
     const getBrewFormula = Effect.fnUntraced(function* () {
-      const brandFormula = yield* text(["brew", "list", "--formula", Brand.packageName])
-      if (brandFormula.includes(Brand.packageName)) return Brand.packageName
-      return Brand.packageName
+      return `${Brand.homebrewTapName}/${Brand.packageName}`
     })
 
     const upgradeFailure = (method: Method, result?: { code: number; stdout: string; stderr: string }) => {
@@ -282,7 +280,7 @@ export const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProce
         if (detectedMethod === "scoop") {
           const response = yield* httpOk.execute(
             HttpClientRequest.get(
-              `https://raw.githubusercontent.com/ScoopInstaller/Main/master/bucket/${Brand.packageName}.json`,
+              `https://raw.githubusercontent.com/${Brand.scoopBucketRepository}/main/bucket/${Brand.packageName}.json`,
             ).pipe(HttpClientRequest.setHeaders({ Accept: "application/json" })),
           )
           const data = yield* HttpClientResponse.schemaBodyJson(ScoopManifest)(response)

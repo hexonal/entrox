@@ -8,9 +8,18 @@ Entrox is an AI coding agent for terminal, desktop, and automation workflows.
 curl -fsSL https://entrox.996icu.wiki/install | bash
 ```
 
-Package-manager distribution is managed separately from source builds. For local
-testing from this repository, build the CLI package and run the generated
-`entrox` binary.
+Package-manager distribution is generated from GitHub releases:
+
+```bash
+brew tap hexonal/entrox
+brew install entrox
+
+scoop bucket add entrox https://github.com/hexonal/scoop-entrox
+scoop install entrox
+```
+
+For local testing from this repository, build the CLI package and run the
+generated `entrox` binary.
 
 ## Usage
 

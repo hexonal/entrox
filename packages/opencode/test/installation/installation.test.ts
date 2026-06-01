@@ -119,10 +119,19 @@ describe("installation", () => {
       }),
     )
 
-    testEffect(testLayer(() => jsonResponse({ version: "2.3.4" }))).effect("reads scoop manifest versions", () =>
+    const scoopCalls: string[] = []
+    testEffect(
+      testLayer((request) => {
+        scoopCalls.push(request.url)
+        return jsonResponse({ version: "2.3.4" })
+      }),
+    ).effect("reads scoop manifest versions from the Entrox bucket", () =>
       Effect.gen(function* () {
         const result = yield* Installation.use.latest("scoop")
         expect(result).toBe("2.3.4")
+        expect(scoopCalls).toContain(
+          `https://raw.githubusercontent.com/${Brand.scoopBucketRepository}/main/bucket/${Brand.packageName}.json`,
+        )
       }),
     )
 
@@ -137,14 +146,19 @@ describe("installation", () => {
 
     testEffect(
       testLayer(
-        () => jsonResponse({ versions: { stable: "2.0.0" } }),
+        () => jsonResponse({}),
         (cmd, args) => {
-          // getBrewFormula: resolve the branded formula without probing upstream taps.
-          if (cmd === "brew" && args.includes("--formula") && args.includes(Brand.packageName)) return Brand.packageName
+          if (
+            cmd === "brew" &&
+            args.includes("info") &&
+            args.includes(`${Brand.homebrewTapName}/${Brand.packageName}`)
+          ) {
+            return JSON.stringify({ formulae: [{ versions: { stable: "2.0.0" } }] })
+          }
           return ""
         },
       ),
-    ).effect("reads brew formulae API versions", () =>
+    ).effect("reads brew versions from the Entrox tap formula", () =>
       Effect.gen(function* () {
         const result = yield* Installation.use.latest("brew")
         expect(result).toBe("2.0.0")
@@ -154,9 +168,16 @@ describe("installation", () => {
     const brewCalls: string[] = []
     testEffect(
       testLayer(
-        () => jsonResponse({ versions: { stable: "2.1.0" } }),
+        () => jsonResponse({}),
         (cmd, args) => {
           if (cmd === "brew") brewCalls.push(args.join(" "))
+          if (
+            cmd === "brew" &&
+            args.includes("info") &&
+            args.includes(`${Brand.homebrewTapName}/${Brand.packageName}`)
+          ) {
+            return JSON.stringify({ formulae: [{ versions: { stable: "2.1.0" } }] })
+          }
           return ""
         },
       ),
