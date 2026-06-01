@@ -151,7 +151,8 @@ jobs:
             --notes-file release-notes.md
 
       - name: Update Homebrew dev formula
-        if: steps.committer.outputs.token != ''
+        if: steps.committer.conclusion == 'success'
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ steps.committer.outputs.token }}
           HOMEBREW_TAP_REPO: hexonal/homebrew-entrox
@@ -217,7 +218,8 @@ jobs:
           fi
 
       - name: Update Scoop dev manifest
-        if: steps.committer.outputs.token != ''
+        if: steps.committer.conclusion == 'success'
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ steps.committer.outputs.token }}
           SCOOP_BUCKET_REPO: hexonal/scoop-entrox
