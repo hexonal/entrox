@@ -68,6 +68,7 @@ jobs:
 
       - name: Setup git committer
         id: committer
+        continue-on-error: true
         uses: ./.github/actions/setup-git-committer
         with:
           opencode-app-id: ${{ vars.OPENCODE_APP_ID }}
@@ -102,6 +103,7 @@ jobs:
         run: |
           cat > release-notes.md <<'EOF'
           Automated Entrox dev build from `${GITHUB_SHA}`.
+          Version: `${OPENCODE_VERSION}`.
 
           ## Install
 
@@ -138,6 +140,7 @@ jobs:
           For this dev build, download `entrox-cli-windows-x64.zip`, unzip it, and add the extracted `bin` directory to `PATH`.
           EOF
           sed -i "s/\${GITHUB_SHA}/${GITHUB_SHA}/g" release-notes.md
+          sed -i "s/\${OPENCODE_VERSION}/${OPENCODE_VERSION}/g" release-notes.md
           gh release delete "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
           gh release create "$TAG_NAME" release-assets/*.zip \
             --repo "$GITHUB_REPOSITORY" \
@@ -148,6 +151,7 @@ jobs:
             --notes-file release-notes.md
 
       - name: Update Homebrew dev formula
+        if: steps.committer.outcome == 'success'
         env:
           GH_TOKEN: ${{ steps.committer.outputs.token }}
           HOMEBREW_TAP_REPO: hexonal/homebrew-entrox
@@ -213,6 +217,7 @@ jobs:
           fi
 
       - name: Update Scoop dev manifest
+        if: steps.committer.outcome == 'success'
         env:
           GH_TOKEN: ${{ steps.committer.outputs.token }}
           SCOOP_BUCKET_REPO: hexonal/scoop-entrox
