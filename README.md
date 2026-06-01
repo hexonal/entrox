@@ -7,8 +7,8 @@ Entrox is an AI coding agent for terminal, desktop, and automation workflows.
 ### macOS / Linux (Homebrew)
 
 ```bash
-brew tap hexonal/entrox
-(brew trust hexonal/entrox || true)
+HOMEBREW_NO_AUTO_UPDATE=1 brew tap hexonal/entrox
+(HOMEBREW_NO_AUTO_UPDATE=1 brew trust hexonal/entrox || true)
 HOMEBREW_NO_AUTO_UPDATE=1 brew install hexonal/entrox/entrox
 ```
 

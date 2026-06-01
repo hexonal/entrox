@@ -118,12 +118,12 @@ if (image) {
       </div>
       <div class="col3">
         <h3>Homebrew</h3>
-        <button class="command" data-command={`brew tap hexonal/entrox
-(brew trust hexonal/entrox || true)
+        <button class="command" data-command={`HOMEBREW_NO_AUTO_UPDATE=1 brew tap hexonal/entrox
+(HOMEBREW_NO_AUTO_UPDATE=1 brew trust hexonal/entrox || true)
 HOMEBREW_NO_AUTO_UPDATE=1 brew install hexonal/entrox/entrox`}>
           <code>
-            <span>brew tap</span> <span class="highlight">hexonal/entrox</span><br />
-            <span>brew trust</span> <span class="highlight">hexonal/entrox</span><br />
+            <span>HOMEBREW_NO_AUTO_UPDATE=1 brew tap</span> <span class="highlight">hexonal/entrox</span><br />
+            <span>HOMEBREW_NO_AUTO_UPDATE=1 brew trust</span> <span class="highlight">hexonal/entrox</span><br />
             <span>brew install</span> <span class="highlight">hexonal/entrox/entrox</span>
           </code>
           <span class="copy">
