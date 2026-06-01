@@ -158,31 +158,38 @@ jobs:
           linux_x64_asset="entrox-cli-linux-x64.zip"
           macos_arm64_hash="$(sha256sum "release-assets/${macos_arm64_asset}" | cut -d' ' -f1)"
           linux_x64_hash="$(sha256sum "release-assets/${linux_x64_asset}" | cut -d' ' -f1)"
+          export MACOS_ARM64_HASH="$macos_arm64_hash"
+          export LINUX_X64_HASH="$linux_x64_hash"
           rm -rf homebrew-tap
           git clone "https://x-access-token:${GH_TOKEN}@github.com/${HOMEBREW_TAP_REPO}.git" homebrew-tap
           mkdir -p homebrew-tap/Formula
-          cat > homebrew-tap/Formula/entrox.rb <<EOF
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import textwrap
+
+          formula = f"""\
           # typed: false
           # frozen_string_literal: true
 
           class Entrox < Formula
             desc "Entrox CLI"
             homepage "https://entrox.996icu.wiki"
-            version "${OPENCODE_VERSION}"
+            version "{os.environ['OPENCODE_VERSION']}"
             license "MIT"
 
             on_macos do
               depends_on arch: :arm64
 
-              url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG_NAME}/entrox-cli-macos-arm64.zip"
-              sha256 "${macos_arm64_hash}"
+              url "https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/{os.environ['TAG_NAME']}/entrox-cli-macos-arm64.zip"
+              sha256 "{os.environ['MACOS_ARM64_HASH']}"
             end
 
             on_linux do
               depends_on arch: :x86_64
 
-              url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG_NAME}/entrox-cli-linux-x64.zip"
-              sha256 "${linux_x64_hash}"
+              url "https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/{os.environ['TAG_NAME']}/entrox-cli-linux-x64.zip"
+              sha256 "{os.environ['LINUX_X64_HASH']}"
             end
 
             depends_on "ripgrep"
@@ -192,10 +199,12 @@ jobs:
             end
 
             test do
-              system "#{bin}/entrox", "--version"
+              system "#{{bin}}/entrox", "--version"
             end
           end
-          EOF
+          """
+          pathlib.Path("homebrew-tap/Formula/entrox.rb").write_text(textwrap.dedent(formula))
+          PY
           cd homebrew-tap
           git add Formula/entrox.rb
           if ! git diff --cached --quiet; then
