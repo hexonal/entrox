@@ -118,22 +118,10 @@ if (image) {
       </div>
       <div class="col3">
         <h3>Homebrew</h3>
-        <button class="command" data-command={`ENTROX_HOMEBREW_TAP="$(brew --repository)/Library/Taps/hexonal/homebrew-entrox"
-if [ -d "$ENTROX_HOMEBREW_TAP/.git" ]; then
-  git -C "$ENTROX_HOMEBREW_TAP" fetch origin
-  git -C "$ENTROX_HOMEBREW_TAP" reset --hard origin/main
-  git -C "$ENTROX_HOMEBREW_TAP" clean -fd
-elif [ -d "$ENTROX_HOMEBREW_TAP" ]; then
-  rm -rf "$ENTROX_HOMEBREW_TAP"
-fi
-HOMEBREW_NO_AUTO_UPDATE=1 brew tap hexonal/entrox
-(HOMEBREW_NO_AUTO_UPDATE=1 brew trust hexonal/entrox || true)
-HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade hexonal/entrox/entrox || HOMEBREW_NO_AUTO_UPDATE=1 brew install hexonal/entrox/entrox`}>
+        <button class="command" data-command={`ENTROX_HOMEBREW_TAP="$(brew --repository)/Library/Taps/hexonal/homebrew-entrox"; if [ -d "$ENTROX_HOMEBREW_TAP/.git" ]; then (git -C "$ENTROX_HOMEBREW_TAP" fetch origin && git -C "$ENTROX_HOMEBREW_TAP" reset --hard origin/main && git -C "$ENTROX_HOMEBREW_TAP" clean -fd) || rm -rf "$ENTROX_HOMEBREW_TAP"; elif [ -d "$ENTROX_HOMEBREW_TAP" ]; then rm -rf "$ENTROX_HOMEBREW_TAP"; fi; HOMEBREW_NO_AUTO_UPDATE=1 brew tap hexonal/entrox; (HOMEBREW_NO_AUTO_UPDATE=1 brew trust hexonal/entrox || true); HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade hexonal/entrox/entrox || HOMEBREW_NO_AUTO_UPDATE=1 brew install hexonal/entrox/entrox`}>
           <code>
-            <span>repair tap</span> <span class="highlight">hexonal/entrox</span><br />
-            <span>HOMEBREW_NO_AUTO_UPDATE=1 brew tap</span> <span class="highlight">hexonal/entrox</span><br />
-            <span>HOMEBREW_NO_AUTO_UPDATE=1 brew trust</span> <span class="highlight">hexonal/entrox</span><br />
-            <span>brew upgrade || install</span> <span class="highlight">hexonal/entrox/entrox</span>
+            <span>self-heal tap && brew upgrade || install</span><br />
+            <span class="highlight">hexonal/entrox/entrox</span>
           </code>
           <span class="copy">
             <CopyIcon />
