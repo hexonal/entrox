@@ -265,5 +265,23 @@ describe("installation", () => {
         expect(error.stderr).toBe("Upgrade verification failed: expected 9.9.9, but entrox reports 9.9.8.")
       }),
     )
+
+    testEffect(
+      testLayer(
+        () => jsonResponse({}),
+        (cmd, args) => {
+          if (cmd === "npm") return ""
+          if (cmd === process.execPath && args.join(" ") === "--version") return "9.9.9\n"
+          if (cmd === Brand.command && args.join(" ") === "--version") return "9.9.8\n"
+          return ""
+        },
+      ),
+    ).effect("fails when the shell command still resolves to a stale duplicate install", () =>
+      Effect.gen(function* () {
+        const error = yield* Effect.flip(Installation.use.upgrade("npm", "9.9.9"))
+        expect(error).toBeInstanceOf(Installation.UpgradeFailedError)
+        expect(error.stderr).toBe("Upgrade verification failed: expected 9.9.9, but entrox reports 9.9.8.")
+      }),
+    )
   })
 })

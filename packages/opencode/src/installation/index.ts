@@ -165,12 +165,21 @@ export const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProce
     const verifyUpgrade = Effect.fnUntraced(function* (target: string) {
       const expected = target.replace(/^v/, "")
       const direct = (yield* text([process.execPath, "--version"])).trim().replace(/^v/, "")
-      if (direct === expected) return
 
       const pathVersion = (yield* text([Brand.command, "--version"])).trim().replace(/^v/, "")
       if (pathVersion === expected) return
 
-      const actual = pathVersion || direct || "unknown"
+      // The command users type must resolve to the upgraded binary. This catches
+      // duplicate installs such as Homebrew plus ~/.entrox/bin with conflicting PATH order.
+      if (pathVersion) {
+        return yield* new UpgradeFailedError({
+          stderr: `Upgrade verification failed: expected ${expected}, but ${Brand.command} reports ${pathVersion}.`,
+        })
+      }
+
+      if (direct === expected) return
+
+      const actual = direct || "unknown"
       return yield* new UpgradeFailedError({
         stderr: `Upgrade verification failed: expected ${expected}, but ${Brand.command} reports ${actual}.`,
       })
