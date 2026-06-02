@@ -219,22 +219,50 @@ describe("installation", () => {
     )
 
     const brewUpgradeCalls: string[] = []
+    const brewGitCalls: string[] = []
     testEffect(
       testLayer(
         () => jsonResponse({}),
         (cmd, args) => {
           if (cmd === "brew") brewUpgradeCalls.push(args.join(" "))
+          if (cmd === "brew" && args.join(" ") === "--repository") return "/opt/homebrew\n"
+          if (cmd === "git") brewGitCalls.push(args.join(" "))
+          if (args.join(" ") === "--version") return "9.9.9\n"
           return ""
         },
       ),
-    ).effect("trusts the Entrox tap before brew upgrades", () =>
+    ).effect("refreshes and trusts the Entrox tap before brew upgrades", () =>
       Effect.gen(function* () {
         yield* Installation.use.upgrade("brew", "9.9.9")
 
         expect(brewUpgradeCalls).toEqual([
+          `tap ${Brand.homebrewTapName}`,
+          "--repository",
           `trust ${Brand.homebrewTapName}`,
           `upgrade ${Brand.homebrewTapName}/${Brand.packageName}`,
         ])
+        expect(brewGitCalls).toEqual([
+          "-C /opt/homebrew/Library/Taps/hexonal/homebrew-entrox fetch origin",
+          "-C /opt/homebrew/Library/Taps/hexonal/homebrew-entrox reset --hard origin/main",
+          "-C /opt/homebrew/Library/Taps/hexonal/homebrew-entrox clean -fd",
+        ])
+      }),
+    )
+
+    testEffect(
+      testLayer(
+        () => jsonResponse({}),
+        (cmd, args) => {
+          if (cmd === "npm") return ""
+          if (args.join(" ") === "--version") return "9.9.8\n"
+          return ""
+        },
+      ),
+    ).effect("fails when upgrade does not install the requested version", () =>
+      Effect.gen(function* () {
+        const error = yield* Effect.flip(Installation.use.upgrade("npm", "9.9.9"))
+        expect(error).toBeInstanceOf(Installation.UpgradeFailedError)
+        expect(error.stderr).toBe("Upgrade verification failed: expected 9.9.9, but entrox reports 9.9.8.")
       }),
     )
   })

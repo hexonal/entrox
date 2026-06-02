@@ -20,7 +20,6 @@ import {
 } from "solid-js"
 import { win32DisableProcessedInput, win32FlushInputBuffer, win32InstallCtrlCGuard } from "./win32"
 import { Flag } from "@opencode-ai/core/flag/flag"
-import semver from "semver"
 import { DialogProvider, useDialog } from "@tui/ui/dialog"
 import { DialogProvider as DialogProviderList } from "@tui/component/dialog-provider"
 import { ErrorComponent } from "@tui/component/error-component"
@@ -78,7 +77,12 @@ import {
 import type { EventSource } from "./context/sdk"
 import { DialogVariant } from "./component/dialog-variant"
 import { Brand } from "@/brand"
-import { UPDATE_AVAILABLE_VERSION_KEY, UPDATE_SKIPPED_VERSION_KEY } from "./update-notice"
+import {
+  isUpdateNewerThan,
+  isUpdateNewerThanCurrent,
+  UPDATE_AVAILABLE_VERSION_KEY,
+  UPDATE_SKIPPED_VERSION_KEY,
+} from "./update-notice"
 
 const appGlobalBindingCommands = [
   "session.list",
@@ -1007,8 +1011,13 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
   event.on("installation.update-available", (evt) => {
     const version = evt.properties.version
 
+    if (!isUpdateNewerThanCurrent(version)) {
+      kv.set(UPDATE_AVAILABLE_VERSION_KEY, undefined)
+      return
+    }
+
     const skipped = kv.get(UPDATE_SKIPPED_VERSION_KEY)
-    if (skipped && !semver.gt(version, skipped)) return
+    if (skipped && !isUpdateNewerThan(version, skipped)) return
 
     kv.set(UPDATE_AVAILABLE_VERSION_KEY, version)
     toast.show({

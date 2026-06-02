@@ -162,6 +162,30 @@ export const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProce
       return `Upgrade failed for ${method}.`
     }
 
+    const verifyUpgrade = Effect.fnUntraced(function* (target: string) {
+      const expected = target.replace(/^v/, "")
+      const direct = (yield* text([process.execPath, "--version"])).trim().replace(/^v/, "")
+      if (direct === expected) return
+
+      const pathVersion = (yield* text([Brand.command, "--version"])).trim().replace(/^v/, "")
+      if (pathVersion === expected) return
+
+      const actual = pathVersion || direct || "unknown"
+      return yield* new UpgradeFailedError({
+        stderr: `Upgrade verification failed: expected ${expected}, but ${Brand.command} reports ${actual}.`,
+      })
+    })
+
+    const refreshBrewTap = Effect.fnUntraced(function* () {
+      yield* run(["brew", "tap", Brand.homebrewTapName], { env: { HOMEBREW_NO_AUTO_UPDATE: "1" } })
+      const brewRepository = (yield* text(["brew", "--repository"])).trim()
+      if (!brewRepository) return
+      const tapPath = path.join(brewRepository, "Library", "Taps", ...Brand.homebrewTapRepository.split("/"))
+      yield* run(["git", "-C", tapPath, "fetch", "origin"])
+      yield* run(["git", "-C", tapPath, "reset", "--hard", "origin/main"])
+      yield* run(["git", "-C", tapPath, "clean", "-fd"])
+    })
+
     const upgradeCurl = Effect.fnUntraced(
       function* (target: string) {
         const response = yield* httpOk.execute(HttpClientRequest.get(Brand.installURL))
@@ -331,6 +355,7 @@ export const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProce
           case "brew": {
             const formula = yield* getBrewFormula()
             const env = { HOMEBREW_NO_AUTO_UPDATE: "1" }
+            yield* refreshBrewTap()
             yield* run(["brew", "trust", Brand.homebrewTapName], { env })
             upgradeResult = yield* run(["brew", "upgrade", formula], { env })
             break
@@ -353,7 +378,7 @@ export const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProce
           stdout: upgradeResult.stdout,
           stderr: upgradeResult.stderr,
         })
-        yield* text([process.execPath, "--version"])
+        yield* verifyUpgrade(target)
       }),
     }
 
