@@ -6,9 +6,37 @@ import { AccountID, OrgID, PollExpired, type PollResult, type AccountError } fro
 import { effectCmd } from "../effect-cmd"
 import * as Prompt from "../effect/prompt"
 import open from "open"
+import { spawn } from "node:child_process"
 import { Brand } from "@/brand"
 
-const openBrowser = (url: string) => Effect.promise(() => open(url).catch(() => undefined))
+/**
+ * Open `url` in the default browser. The bundled `open` package can fail in the
+ * compiled single-file binary — notably on Windows, where the login browser
+ * then never opens (the failure was previously swallowed). Fall back to a
+ * platform-native opener; on Windows use rundll32 to avoid cmd `start` quoting
+ * pitfalls with query strings.
+ */
+const openBrowser = (url: string) =>
+  Effect.promise(async () => {
+    try {
+      await open(url)
+      return
+    } catch {
+      // fall through to the native opener below
+    }
+    try {
+      const child =
+        process.platform === "win32"
+          ? spawn("rundll32", ["url.dll,FileProtocolHandler", url], { detached: true, stdio: "ignore" })
+          : process.platform === "darwin"
+            ? spawn("open", [url], { detached: true, stdio: "ignore" })
+            : spawn("xdg-open", [url], { detached: true, stdio: "ignore" })
+      child.on("error", () => {})
+      child.unref()
+    } catch {
+      // give up silently — the login URL is printed above for manual opening
+    }
+  })
 
 const println = (msg: string) => Effect.sync(() => UI.println(msg))
 

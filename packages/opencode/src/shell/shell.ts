@@ -90,9 +90,13 @@ function resolve(file: string) {
 }
 
 function win() {
+  // Prefer Git Bash on Windows when it is installed: the agent and most coding
+  // commands are POSIX/bash-oriented, so a POSIX shell gives behaviour
+  // consistent with macOS/Linux. Fall back to PowerShell/cmd when Git Bash is
+  // not present (set OPENCODE_GIT_BASH_PATH to point at a custom bash.exe).
   return Array.from(
     new Set(
-      [which("pwsh"), which("powershell"), gitbash(), process.env.COMSPEC || "cmd.exe"]
+      [gitbash(), which("pwsh"), which("powershell"), process.env.COMSPEC || "cmd.exe"]
         .filter((item): item is string => Boolean(item))
         .map(full),
     ),
