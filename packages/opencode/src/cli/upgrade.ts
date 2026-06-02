@@ -11,6 +11,7 @@ import path from "path"
 import semver from "semver"
 
 const CHECK_INTERVAL = 6 * 60 * 60 * 1000
+const ENTROX_NO_UPDATE_CHECK_INTERVAL = 5 * 60 * 1000
 const CACHE_FILE = path.join(Global.Path.state, "update-check.json")
 
 type UpdateCheckCache = {
@@ -26,11 +27,35 @@ async function writeCache(latest?: string): Promise<void> {
   await Filesystem.writeJson(CACHE_FILE, { checkedAt: Date.now(), latest }, 0o600).catch(() => undefined)
 }
 
-function isNewer(latest: string): boolean {
-  const current = semver.valid(InstallationVersion)
+function isVersionNewer(latest: string | undefined, currentVersion: string): boolean {
+  if (!latest) return false
+  const current = semver.valid(currentVersion)
   const target = semver.valid(latest)
   if (current && target) return semver.gt(target, current)
-  return InstallationVersion !== latest
+  return currentVersion !== latest
+}
+
+function isNewer(latest: string): boolean {
+  return isVersionNewer(latest, InstallationVersion)
+}
+
+export function shouldUseCachedLatest(input: {
+  command: string
+  checkedAt: number
+  now: number
+  cachedLatest?: string
+  currentVersion: string
+  alwaysNotify?: boolean
+}): boolean {
+  if (input.alwaysNotify || input.checkedAt <= 0) return false
+
+  // Entrox dev releases are frequent, so refresh no-update caches quickly.
+  const interval =
+    input.command === "entrox" && !isVersionNewer(input.cachedLatest, input.currentVersion)
+      ? ENTROX_NO_UPDATE_CHECK_INTERVAL
+      : CHECK_INTERVAL
+
+  return input.now - input.checkedAt < interval
 }
 
 function releaseType(latest: string): Installation.ReleaseType {
@@ -45,7 +70,16 @@ async function latestWithCache(method?: Installation.Method): Promise<string | u
   const cachedLatest = typeof cache.latest === "string" ? cache.latest : undefined
   const checkedAt = typeof cache.checkedAt === "number" ? cache.checkedAt : 0
 
-  if (!Flag.OPENCODE_ALWAYS_NOTIFY_UPDATE && checkedAt > 0 && Date.now() - checkedAt < CHECK_INTERVAL) {
+  if (
+    shouldUseCachedLatest({
+      command: Brand.command,
+      checkedAt,
+      now: Date.now(),
+      cachedLatest,
+      currentVersion: InstallationVersion,
+      alwaysNotify: Flag.OPENCODE_ALWAYS_NOTIFY_UPDATE,
+    })
+  ) {
     return cachedLatest
   }
 
