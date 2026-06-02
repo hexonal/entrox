@@ -108,6 +108,8 @@ jobs:
 
           output = pathlib.Path("release-assets")
           public_base_url = os.environ.get("ALIYUN_OSS_PUBLIC_BASE_URL", "").rstrip("/")
+          version = os.environ["OPENCODE_VERSION"]
+          public_asset_base_url = f"{public_base_url}/{version}" if public_base_url else ""
           assets = []
           checksum_lines = []
           for path in sorted(output.glob("*.zip")):
@@ -118,19 +120,19 @@ jobs:
                   "sha256": digest,
                   "size": path.stat().st_size,
               }
-              if public_base_url:
-                  item["url"] = f"{public_base_url}/{path.name}"
+              if public_asset_base_url:
+                  item["url"] = f"{public_asset_base_url}/{path.name}"
               assets.append(item)
 
           (output / "SHA256SUMS").write_text("\n".join(checksum_lines) + "\n", encoding="utf-8")
           manifest = {
-              "version": os.environ["OPENCODE_VERSION"],
+              "version": version,
               "tag": "entrox-dev",
               "commit": os.environ["GITHUB_SHA"],
               "assets": assets,
           }
-          if public_base_url:
-              manifest["download_base_url"] = public_base_url
+          if public_asset_base_url:
+              manifest["download_base_url"] = public_asset_base_url
           (output / "latest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
           PY
           ls -lh release-assets
@@ -170,14 +172,20 @@ jobs:
           endpoint = os.environ["ALIYUN_OSS_ENDPOINT"].strip().rstrip("/")
           prefix = os.environ.get("ALIYUN_OSS_PREFIX", "entrox-dev").strip("/")
           object_acl = os.environ.get("ALIYUN_OSS_OBJECT_ACL", "public-read").strip()
+          version = os.environ["OPENCODE_VERSION"].strip()
 
           parsed = urllib.parse.urlparse(endpoint if "://" in endpoint else f"https://{endpoint}")
           scheme = parsed.scheme or "https"
           endpoint_host = parsed.netloc or parsed.path
           host = endpoint_host if endpoint_host.startswith(f"{bucket}.") else f"{bucket}.{endpoint_host}"
 
+          def object_key_for(path: pathlib.Path) -> str:
+              if path.name == "latest.json":
+                  return f"{prefix}/{path.name}" if prefix else path.name
+              return f"{prefix}/{version}/{path.name}" if prefix else f"{version}/{path.name}"
+
           def put_object(path: pathlib.Path) -> None:
-              object_key = f"{prefix}/{path.name}" if prefix else path.name
+              object_key = object_key_for(path)
               quoted_key = urllib.parse.quote(object_key, safe="/")
               url = f"{scheme}://{host}/{quoted_key}"
               content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
@@ -187,6 +195,10 @@ jobs:
                   "Content-Type": content_type,
                   "x-oss-object-acl": object_acl,
               }
+              if path.name == "latest.json":
+                  headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+              else:
+                  headers["Cache-Control"] = "public, max-age=31536000, immutable"
               canonical_oss_headers = "".join(
                   f"{key.lower()}:{value}\n"
                   for key, value in sorted(headers.items())
