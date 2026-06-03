@@ -77,18 +77,20 @@ export function hasBrowserLoginConnection(connected: readonly string[]) {
 }
 
 export function providerOptions(list: { id: string; name: string }[]): ProviderOption[] {
-  const configured = [...list]
-    .filter((provider) => !isBrowserLoginProviderID(provider.id) && provider.id !== "other")
-    .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
-    .map(
-      (provider): ProviderOption => ({
-        type: "provider",
-        providerID: provider.id,
-        title: provider.name || provider.id,
-        value: provider.id,
-        category: "Configured",
-      }),
-    )
+  const configured = Brand.showConfiguredProvidersInConnectDialog
+    ? [...list]
+        .filter((provider) => !isBrowserLoginProviderID(provider.id) && provider.id !== "other")
+        .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
+        .map(
+          (provider): ProviderOption => ({
+            type: "provider",
+            providerID: provider.id,
+            title: provider.name || provider.id,
+            value: provider.id,
+            category: "Configured",
+          }),
+        )
+    : []
 
   return [
     {
@@ -106,6 +108,8 @@ export function configuredProviderOptions(
   all: { id: string; name: string }[],
   connected: readonly string[],
 ): ProviderOption[] {
+  if (!Brand.showConfiguredProvidersInConnectDialog) return providerOptions([])
+
   const connectedIDs = new Set(connected)
   return providerOptions(all.filter((provider) => connectedIDs.has(provider.id)))
 }

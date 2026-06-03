@@ -14,6 +14,7 @@ export const Brand = {
   userAgentProduct: "entrox",
   defaultSoundPack: "entrox.default",
   authProviderURL: "https://entrox.996icu.wiki",
+  showConfiguredProvidersInConnectDialog: false,
   visibleModelProviderIDs: ["entrox"],
   visibleModelProviderIDPrefixes: ["entrox-"],
   websiteURL: "https://entrox.996icu.wiki",

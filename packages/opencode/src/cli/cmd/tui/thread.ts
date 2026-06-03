@@ -224,10 +224,6 @@ export const TuiThreadCommand = cmd({
         return
       }
 
-      setTimeout(() => {
-        client.call("checkUpgrade", { directory: cwd }).catch(() => {})
-      }, 1000).unref?.()
-
       try {
         const { createTuiRenderer, tui } = await import("./app")
         const renderer = await createTuiRenderer(config)
@@ -252,6 +248,13 @@ export const TuiThreadCommand = cmd({
             fork: args.fork,
           },
         })
+        void handle.ready
+          .then(() => {
+            setTimeout(() => {
+              client.call("checkUpgrade", { directory: cwd }).catch(() => {})
+            }, 1000).unref?.()
+          })
+          .catch(() => undefined)
         await handle.done
       } finally {
         await stop()

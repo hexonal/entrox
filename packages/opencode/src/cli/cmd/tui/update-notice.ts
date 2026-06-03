@@ -15,3 +15,9 @@ export function isUpdateNewerThanCurrent(version: string | undefined): version i
   if (!version) return false
   return isUpdateNewerThan(version, InstallationVersion)
 }
+
+export function updateNoticeVersion(version: string | undefined, skippedVersion?: string): string | undefined {
+  if (!isUpdateNewerThanCurrent(version)) return undefined
+  if (skippedVersion && !isUpdateNewerThan(version, skippedVersion)) return undefined
+  return version
+}

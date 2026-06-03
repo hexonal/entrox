@@ -77,11 +77,11 @@ import {
 import type { EventSource } from "./context/sdk"
 import { DialogVariant } from "./component/dialog-variant"
 import { Brand } from "@/brand"
+import { readUpdateCheckCache } from "@/cli/update-check-cache"
 import {
-  isUpdateNewerThan,
-  isUpdateNewerThanCurrent,
   UPDATE_AVAILABLE_VERSION_KEY,
   UPDATE_SKIPPED_VERSION_KEY,
+  updateNoticeVersion,
 } from "./update-notice"
 
 const appGlobalBindingCommands = [
@@ -454,6 +454,37 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
   const [pasteSummaryEnabled, setPasteSummaryEnabled] = createSignal(
     kv.get("paste_summary_enabled", !sync.data.config.experimental?.disable_paste_summary),
   )
+
+  const applyUpdateNotice = (version: string | undefined, options?: { toast?: boolean }) => {
+    const skipped = kv.get(UPDATE_SKIPPED_VERSION_KEY)
+    const noticeVersion = updateNoticeVersion(version, typeof skipped === "string" ? skipped : undefined)
+    const current = kv.get(UPDATE_AVAILABLE_VERSION_KEY)
+    if (!noticeVersion) {
+      if (current !== undefined) kv.set(UPDATE_AVAILABLE_VERSION_KEY, undefined)
+      return
+    }
+
+    kv.set(UPDATE_AVAILABLE_VERSION_KEY, noticeVersion)
+    if (options?.toast && current !== noticeVersion) {
+      toast.show({
+        variant: "info",
+        title: "Update available",
+        message: `Run ${Brand.command} upgrade to install v${noticeVersion}`,
+        duration: 10000,
+      })
+    }
+  }
+
+  let updateCacheLoaded = false
+  createEffect(() => {
+    if (updateCacheLoaded || !kv.ready) return
+    updateCacheLoaded = true
+    void readUpdateCheckCache()
+      .then((cache) => {
+        applyUpdateNotice(typeof cache.latest === "string" ? cache.latest : undefined, { toast: true })
+      })
+      .catch(() => undefined)
+  })
 
   // Update terminal window title based on current route and session
   createEffect(() => {
@@ -1009,23 +1040,7 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
   })
 
   event.on("installation.update-available", (evt) => {
-    const version = evt.properties.version
-
-    if (!isUpdateNewerThanCurrent(version)) {
-      kv.set(UPDATE_AVAILABLE_VERSION_KEY, undefined)
-      return
-    }
-
-    const skipped = kv.get(UPDATE_SKIPPED_VERSION_KEY)
-    if (skipped && !isUpdateNewerThan(version, skipped)) return
-
-    kv.set(UPDATE_AVAILABLE_VERSION_KEY, version)
-    toast.show({
-      variant: "info",
-      title: "Update available",
-      message: `Run ${Brand.command} upgrade to install v${version}`,
-      duration: 10000,
-    })
+    applyUpdateNotice(evt.properties.version, { toast: true })
   })
 
   event.on("installation.updated", (evt) => {

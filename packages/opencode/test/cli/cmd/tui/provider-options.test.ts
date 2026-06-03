@@ -9,11 +9,12 @@ import {
 } from "../../../../src/cli/cmd/tui/component/dialog-provider"
 
 describe("providerOptions", () => {
-  test("exposes Entrox browser login and configured providers", () => {
+  test("exposes only Entrox browser login in the connect dialog", () => {
     expect(
       providerOptions([
         { id: "openai", name: "OpenAI" },
         { id: "google", name: "Gemini" },
+        { id: "cloudflare-workers-ai", name: "Cloudflare Workers AI" },
       ]),
     ).toMatchObject([
       {
@@ -21,28 +22,19 @@ describe("providerOptions", () => {
         description: "Browser login",
         category: "Provider",
       },
-      {
-        title: "Gemini",
-        value: "google",
-        category: "Configured",
-      },
-      {
-        title: "OpenAI",
-        value: "openai",
-        category: "Configured",
-      },
     ])
+    expect(providerOptions([{ id: "cloudflare-workers-ai", name: "Cloudflare Workers AI" }])).toHaveLength(1)
   })
 
-  test("does not expose upstream opencode provider as a provider choice", () => {
+  test("does not expose upstream opencode or configured providers as provider choices", () => {
     const names = providerOptions([
       { id: "opencode", name: "opencode" },
       { id: "opencode-go", name: "opencode Go" },
       { id: "google", name: "Gemini" },
     ]).map((option) => option.title)
-    expect(names).toContain("Gemini")
     expect(names).not.toContain("opencode")
     expect(names).not.toContain("opencode Go")
+    expect(names).not.toContain("Gemini")
   })
 
   test("does not expose custom provider option", () => {
@@ -69,12 +61,8 @@ describe("providerOptions", () => {
         description: "Browser login",
         category: "Provider",
       },
-      {
-        title: "Gemini",
-        value: "google",
-        category: "Configured",
-      },
     ])
+    expect(options.map((option) => option.title)).not.toContain("Gemini")
     expect(options.map((option) => option.title)).not.toContain("AIHubMix")
     expect(options.map((option) => option.title)).not.toContain("OpenAI")
     expect(options.map((option) => option.title)).not.toContain("opencode")

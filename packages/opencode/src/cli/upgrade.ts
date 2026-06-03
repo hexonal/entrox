@@ -4,28 +4,12 @@ import { Flag } from "@opencode-ai/core/flag/flag"
 import { Installation } from "@/installation"
 import { InstallationVersion } from "@opencode-ai/core/installation/version"
 import { GlobalBus } from "@/bus/global"
-import { Global } from "@opencode-ai/core/global"
-import { Filesystem } from "@/util/filesystem"
 import { Brand } from "@/brand"
-import path from "path"
+import { readUpdateCheckCache, writeUpdateCheckCache } from "@/cli/update-check-cache"
 import semver from "semver"
 
 const CHECK_INTERVAL = 6 * 60 * 60 * 1000
 const ENTROX_NO_UPDATE_CHECK_INTERVAL = 5 * 60 * 1000
-const CACHE_FILE = path.join(Global.Path.state, "update-check.json")
-
-type UpdateCheckCache = {
-  checkedAt?: number
-  latest?: string
-}
-
-async function readCache(): Promise<UpdateCheckCache> {
-  return Filesystem.readJson<UpdateCheckCache>(CACHE_FILE).catch(() => ({}))
-}
-
-async function writeCache(latest?: string): Promise<void> {
-  await Filesystem.writeJson(CACHE_FILE, { checkedAt: Date.now(), latest }, 0o600).catch(() => undefined)
-}
 
 function isVersionNewer(latest: string | undefined, currentVersion: string): boolean {
   if (!latest) return false
@@ -66,7 +50,7 @@ function releaseType(latest: string): Installation.ReleaseType {
 }
 
 async function latestWithCache(method?: Installation.Method): Promise<string | undefined> {
-  const cache = await readCache()
+  const cache = await readUpdateCheckCache()
   const cachedLatest = typeof cache.latest === "string" ? cache.latest : undefined
   const checkedAt = typeof cache.checkedAt === "number" ? cache.checkedAt : 0
 
@@ -84,7 +68,7 @@ async function latestWithCache(method?: Installation.Method): Promise<string | u
   }
 
   const latest = await (method ? Installation.latest(method) : Installation.latest()).catch(() => undefined)
-  await writeCache(latest ?? cachedLatest)
+  await writeUpdateCheckCache(latest ?? cachedLatest)
   return latest ?? cachedLatest
 }
 
