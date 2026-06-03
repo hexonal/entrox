@@ -12,7 +12,7 @@ import {
   HttpServerRequest,
   HttpServerResponse,
 } from "effect/unstable/http"
-import { AppFileSystem } from "@opencode-ai/core/filesystem"
+import { FSUtil } from "@opencode-ai/core/fs-util"
 import { RuntimeFlags } from "../../src/effect/runtime-flags"
 import { ServerAuth } from "../../src/server/auth"
 import { authorizationRouterMiddleware } from "../../src/server/routes/instance/httpapi/middleware/authorization"
@@ -43,7 +43,7 @@ const testStateLayer = Layer.effectDiscard(
   }),
 )
 
-const it = testEffect(Layer.mergeAll(testStateLayer, AppFileSystem.defaultLayer, RuntimeFlags.layer()))
+const it = testEffect(Layer.mergeAll(testStateLayer, FSUtil.defaultLayer, RuntimeFlags.layer()))
 
 function restoreEnv(key: string, value: string | undefined) {
   if (value === undefined) {
@@ -90,7 +90,7 @@ function uiApp(input?: {
   const handler = HttpRouter.toWebHandler(
     HttpRouter.use((router) =>
       Effect.gen(function* () {
-        const fs = yield* AppFileSystem.Service
+        const fs = yield* FSUtil.Service
         const client = yield* HttpClient.HttpClient
         const flags = yield* RuntimeFlags.Service
         yield* router.add("*", "/*", (request) =>
@@ -100,7 +100,7 @@ function uiApp(input?: {
     ).pipe(
       Layer.provide(authorizationRouterMiddleware.layer.pipe(Layer.provide(ServerAuth.Config.defaultLayer))),
       Layer.provide([
-        AppFileSystem.defaultLayer,
+        FSUtil.defaultLayer,
         input?.client ?? httpClient(new Response("ui")),
         RuntimeFlags.layer({ disableEmbeddedWebUi: input?.disableEmbeddedWebUi ?? false }),
         HttpServer.layerServices,
@@ -133,7 +133,7 @@ function routeOrderingApp() {
   const handler = HttpRouter.toWebHandler(
     HttpRouter.use((router) =>
       Effect.gen(function* () {
-        const fs = yield* AppFileSystem.Service
+        const fs = yield* FSUtil.Service
         const client = yield* HttpClient.HttpClient
         const flags = yield* RuntimeFlags.Service
         yield* router.add("GET", "/session/:sessionID", () =>
@@ -145,7 +145,7 @@ function routeOrderingApp() {
       }),
     ).pipe(
       Layer.provide([
-        AppFileSystem.defaultLayer,
+        FSUtil.defaultLayer,
         RuntimeFlags.layer({ disableEmbeddedWebUi: true }),
         httpClient(new Response("ui"), (request) => {
           proxiedUrl = request.url
@@ -211,7 +211,7 @@ describe("HttpApi UI fallback", () => {
       let proxiedUrl: string | undefined
 
       const response = yield* Effect.gen(function* () {
-        const fs = yield* AppFileSystem.Service
+        const fs = yield* FSUtil.Service
         const client = yield* HttpClient.HttpClient
         const flags = yield* RuntimeFlags.Service
         return yield* serveUIEffect(HttpServerRequest.fromWeb(new Request("http://localhost/assets/app.js")), {
@@ -261,7 +261,7 @@ describe("HttpApi UI fallback", () => {
   it.live("strips upstream transfer-encoding header from proxied assets", () =>
     Effect.gen(function* () {
       const response = yield* Effect.gen(function* () {
-        const fs = yield* AppFileSystem.Service
+        const fs = yield* FSUtil.Service
         const client = yield* HttpClient.HttpClient
         const flags = yield* RuntimeFlags.Service
         return yield* serveUIEffect(HttpServerRequest.fromWeb(new Request("http://localhost/")), {
@@ -304,7 +304,7 @@ describe("HttpApi UI fallback", () => {
     Effect.gen(function* () {
       let readPath: string | undefined
 
-      const fs = yield* AppFileSystem.Service
+      const fs = yield* FSUtil.Service
       const response = yield* serveEmbeddedUIEffect(
         "/assets/app.js",
         {
@@ -331,7 +331,7 @@ describe("HttpApi UI fallback", () => {
     Effect.gen(function* () {
       const script = 'document.documentElement.dataset.theme = "dark"'
 
-      const fs = yield* AppFileSystem.Service
+      const fs = yield* FSUtil.Service
       const response = yield* serveEmbeddedUIEffect(
         "/",
         {
