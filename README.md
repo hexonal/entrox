@@ -10,6 +10,14 @@ Entrox is an AI coding agent for terminal, desktop, and automation workflows.
 curl -fsSL https://entrox.996icu.wiki/install | bash
 ```
 
+### macOS Homebrew
+
+```bash
+HOMEBREW_NO_AUTO_UPDATE=1 brew tap hexonal/entrox
+(HOMEBREW_NO_AUTO_UPDATE=1 brew trust hexonal/entrox || true)
+HOMEBREW_NO_AUTO_UPDATE=1 brew install hexonal/entrox/entrox
+```
+
 ### Windows
 
 ```powershell

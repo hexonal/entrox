@@ -452,6 +452,96 @@ jobs:
           pattern: latest-yml-*
           path: /tmp/latest-yml
 
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        if: needs.version.outputs.release
+        with:
+          pattern: entrox-desktop-*
+          path: /tmp/desktop-artifacts
+
+      - name: Upload desktop assets to Aliyun OSS mirror
+        if: needs.version.outputs.release
+        env:
+          ALIYUN_OSS_ACCESS_KEY_ID: ${{ secrets.ALIYUN_OSS_ACCESS_KEY_ID }}
+          ALIYUN_OSS_ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_OSS_ACCESS_KEY_SECRET }}
+          ALIYUN_OSS_BUCKET: ${{ vars.ALIYUN_OSS_BUCKET }}
+          ALIYUN_OSS_ENDPOINT: ${{ vars.ALIYUN_OSS_ENDPOINT }}
+          ALIYUN_OSS_DESKTOP_PREFIX: ${{ vars.ALIYUN_OSS_DESKTOP_PREFIX || 'entrox-desktop' }}
+          ALIYUN_OSS_OBJECT_ACL: ${{ vars.ALIYUN_OSS_OBJECT_ACL || 'public-read' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ALIYUN_OSS_ACCESS_KEY_ID:-}" ] || \
+             [ -z "${ALIYUN_OSS_ACCESS_KEY_SECRET:-}" ] || \
+             [ -z "${ALIYUN_OSS_BUCKET:-}" ] || \
+             [ -z "${ALIYUN_OSS_ENDPOINT:-}" ]; then
+            echo "Aliyun OSS mirror is not configured; skipping desktop upload."
+            exit 0
+          fi
+
+          python3 - <<'PY'
+          import base64
+          import email.utils
+          import hashlib
+          import hmac
+          import mimetypes
+          import os
+          import pathlib
+          import urllib.parse
+          import urllib.request
+
+          access_key_id = os.environ["ALIYUN_OSS_ACCESS_KEY_ID"]
+          access_key_secret = os.environ["ALIYUN_OSS_ACCESS_KEY_SECRET"]
+          bucket = os.environ["ALIYUN_OSS_BUCKET"].strip()
+          endpoint = os.environ["ALIYUN_OSS_ENDPOINT"].strip().rstrip("/")
+          prefix = os.environ.get("ALIYUN_OSS_DESKTOP_PREFIX", "entrox-desktop").strip("/")
+          object_acl = os.environ.get("ALIYUN_OSS_OBJECT_ACL", "public-read").strip()
+          root = pathlib.Path("/tmp/desktop-artifacts")
+          extensions = {".dmg", ".exe", ".deb", ".rpm", ".appimage"}
+
+          parsed = urllib.parse.urlparse(endpoint if "://" in endpoint else f"https://{endpoint}")
+          scheme = parsed.scheme or "https"
+          endpoint_host = parsed.netloc or parsed.path
+          host = endpoint_host if endpoint_host.startswith(f"{bucket}.") else f"{bucket}.{endpoint_host}"
+
+          def should_upload(path: pathlib.Path) -> bool:
+              name = path.name.lower()
+              return path.is_file() and (path.suffix.lower() in extensions or name.endswith(".app.tar.gz"))
+
+          def put_object(path: pathlib.Path) -> None:
+              object_key = f"{prefix}/{path.name}" if prefix else path.name
+              quoted_key = urllib.parse.quote(object_key, safe="/")
+              url = f"{scheme}://{host}/{quoted_key}"
+              content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+              date = email.utils.formatdate(usegmt=True)
+              headers = {
+                  "Date": date,
+                  "Content-Type": content_type,
+                  "Cache-Control": "public, max-age=31536000, immutable",
+                  "x-oss-object-acl": object_acl,
+              }
+              canonical_oss_headers = "".join(
+                  f"{key.lower()}:{value}\n"
+                  for key, value in sorted(headers.items())
+                  if key.lower().startswith("x-oss-")
+              )
+              canonical_resource = f"/{bucket}/{object_key}"
+              string_to_sign = f"PUT\n\n{content_type}\n{date}\n{canonical_oss_headers}{canonical_resource}"
+              signature = base64.b64encode(
+                  hmac.new(access_key_secret.encode(), string_to_sign.encode(), hashlib.sha1).digest()
+              ).decode()
+              headers["Authorization"] = f"OSS {access_key_id}:{signature}"
+              request = urllib.request.Request(url, data=path.read_bytes(), headers=headers, method="PUT")
+              with urllib.request.urlopen(request, timeout=600) as response:
+                  if response.status // 100 != 2:
+                      raise RuntimeError(f"upload failed for {path.name}: HTTP {response.status}")
+              print(f"uploaded {path.name} -> oss://{bucket}/{object_key}")
+
+          files = sorted(path for path in root.rglob("*") if should_upload(path))
+          if not files:
+              raise RuntimeError("No desktop installer assets found to upload")
+          for path in files:
+              put_object(path)
+          PY
+
       - name: Setup git committer
         id: committer
         uses: ./.github/actions/setup-git-committer
