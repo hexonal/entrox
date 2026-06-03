@@ -9,6 +9,7 @@ import { DialogVariant } from "./dialog-variant"
 import * as fuzzysort from "fuzzysort"
 import { useConnected } from "./use-connected"
 import { Brand } from "@/brand"
+import { visibleModelProviders, visibleModelSelections } from "@tui/util/model-provider-visibility"
 
 export function DialogModel(props: { providerID?: string }) {
   const local = useLocal()
@@ -24,8 +25,8 @@ export function DialogModel(props: { providerID?: string }) {
   const options = createMemo(() => {
     const needle = query().trim()
     const showSections = showExtra() && needle.length === 0
-    const favorites = connected() ? local.model.favorite() : []
-    const recents = local.model.recent()
+    const favorites = connected() ? visibleModelSelections(local.model.favorite(), props.providerID) : []
+    const recents = visibleModelSelections(local.model.recent(), props.providerID)
 
     function toOptions(items: typeof favorites, category: string) {
       if (!showSections) return []
@@ -60,7 +61,7 @@ export function DialogModel(props: { providerID?: string }) {
     )
 
     const providerOptions = pipe(
-      sync.data.provider,
+      visibleModelProviders(sync.data.provider, props.providerID),
       sortBy(
         (provider) => provider.id !== "opencode",
         (provider) => provider.name,

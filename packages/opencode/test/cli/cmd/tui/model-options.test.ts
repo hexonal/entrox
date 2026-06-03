@@ -1,4 +1,9 @@
 import { describe, expect, test } from "bun:test"
+import {
+  isVisibleModelProviderID,
+  visibleModelProviders,
+  visibleModelSelections,
+} from "../../../../src/cli/cmd/tui/util/model-provider-visibility"
 import { sortModelOptions } from "../../../../src/cli/cmd/tui/component/dialog-model"
 
 describe("sortModelOptions", () => {
@@ -26,5 +31,39 @@ describe("sortModelOptions", () => {
     )
 
     expect(sorted.map((model) => model.title)).toEqual(["Alpha", "Gamma", "Beta"])
+  })
+})
+
+describe("visible model providers", () => {
+  test("uses the Entrox brand allowlist for the regular model picker", () => {
+    expect(isVisibleModelProviderID("entrox")).toBe(true)
+    expect(isVisibleModelProviderID("entrox-gemini")).toBe(true)
+    expect(isVisibleModelProviderID("cloudflare-workers-ai")).toBe(false)
+    expect(isVisibleModelProviderID("opencode")).toBe(false)
+  })
+
+  test("hides non-Entrox providers from regular picker provider options", () => {
+    const providers = visibleModelProviders([
+      { id: "cloudflare-workers-ai", name: "Cloudflare Workers AI" },
+      { id: "entrox", name: "Entrox" },
+      { id: "entrox-gemini", name: "Entrox Gemini" },
+      { id: "opencode", name: "opencode" },
+    ])
+
+    expect(providers.map((provider) => provider.id)).toEqual(["entrox", "entrox-gemini"])
+  })
+
+  test("hides stale recents and favorites from non-Entrox providers", () => {
+    const selections = visibleModelSelections([
+      { providerID: "cloudflare-workers-ai", modelID: "@cf/meta/llama-3" },
+      { providerID: "entrox", modelID: "claude-sonnet-4" },
+      { providerID: "entrox-openai", modelID: "gpt-5.5" },
+      { providerID: "opencode", modelID: "grok-code-fast-1" },
+    ])
+
+    expect(selections).toEqual([
+      { providerID: "entrox", modelID: "claude-sonnet-4" },
+      { providerID: "entrox-openai", modelID: "gpt-5.5" },
+    ])
   })
 })
