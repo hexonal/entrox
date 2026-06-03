@@ -28,6 +28,8 @@ jobs:
             host: ubuntu-24.04
           - name: macos-arm64
             host: macos-26
+          - name: macos-x64
+            host: macos-26-intel
           - name: windows-x64
             host: windows-2025-vs2026
     runs-on: ${{ matrix.settings.host }}
@@ -248,7 +250,10 @@ jobs:
           HOMEBREW_NO_AUTO_UPDATE=1 brew install hexonal/entrox/entrox
           ```
 
-          For this dev build, download `entrox-cli-macos-arm64.zip`, unzip it, and move `bin/entrox` into a directory on your `PATH`.
+          For this dev build, download the matching macOS asset, unzip it, and move `bin/entrox` into a directory on your `PATH`:
+
+          - Apple Silicon: `entrox-cli-macos-arm64.zip`
+          - Intel: `entrox-cli-macos-x64.zip`
 
           ### Linux fallback: manual
 
