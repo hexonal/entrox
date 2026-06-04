@@ -8,11 +8,11 @@ export const VercelPlugin = PluginV2.define({
     return {
       "catalog.transform": Effect.fn(function* (evt) {
         for (const item of evt.provider.list()) {
-          if (item.provider.endpoint.type !== "aisdk") continue
-          if (item.provider.endpoint.package !== "@ai-sdk/vercel") continue
+          if (item.provider.api.type !== "aisdk") continue
+          if (item.provider.api.package !== "@ai-sdk/vercel") continue
           evt.provider.update(item.provider.id, (provider) => {
-            provider.options.headers["http-referer"] = ProviderBrand.websiteURL
-            provider.options.headers["x-title"] = ProviderBrand.title
+            provider.request.headers["http-referer"] = ProviderBrand.websiteURL
+            provider.request.headers["x-title"] = ProviderBrand.title
           })
         }
       }),

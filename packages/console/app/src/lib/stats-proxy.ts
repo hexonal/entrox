@@ -9,7 +9,7 @@ export async function statsProxy(evt: APIEvent) {
   targetUrl.hostname = Resource.App.stage === "production" ? publicBrand.statsHost : publicBrand.statsDevHost
   targetUrl.port = ""
 
-  if (targetUrl.pathname.startsWith("/stats/_build/")) {
+  if (targetUrl.pathname.startsWith("/stats/_build/") || targetUrl.pathname === "/stats/banner.png") {
     targetUrl.pathname = targetUrl.pathname.slice("/stats".length)
   }
 
