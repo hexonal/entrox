@@ -5,6 +5,7 @@ import { InstanceDisposed } from "@/server/event"
 import { Question } from "@/question"
 import { ConfigApi } from "./groups/config"
 import { ControlApi } from "./groups/control"
+import { ControlPlaneApi } from "./groups/control-plane"
 import { EventApi } from "./groups/event"
 import { ExperimentalApi } from "./groups/experimental"
 import { FileApi } from "./groups/file"
@@ -20,7 +21,7 @@ import { SessionApi } from "./groups/session"
 import { SyncApi } from "./groups/sync"
 import { TuiApi } from "./groups/tui"
 import { WorkspaceApi } from "./groups/workspace"
-import { V2Api } from "./groups/v2"
+import { V2Api } from "@opencode-ai/server/api"
 // GlobalEventSchema snapshots the registry after event-producing groups register their variants.
 import { GlobalApi } from "./groups/global"
 import { Authorization } from "./middleware/authorization"
@@ -32,7 +33,7 @@ const EventSchema = Schema.Union([
     .values()
     .map((definition) =>
       Schema.Struct({
-        id: Schema.String,
+        id: EventV2.ID,
         type: Schema.Literal(definition.type),
         properties: definition.data,
       }).annotate({ identifier: `Event.${definition.type}` }),
@@ -43,6 +44,7 @@ const EventSchema = Schema.Union([
 
 export const RootHttpApi = HttpApi.make(`${Brand.command}-root`)
   .addHttpApi(ControlApi)
+  .addHttpApi(ControlPlaneApi)
   .addHttpApi(GlobalApi)
   .middleware(SchemaErrorMiddleware)
   .middleware(Authorization)
@@ -61,7 +63,6 @@ export const InstanceHttpApi = HttpApi.make(`${Brand.command}-instance`)
   .addHttpApi(ProviderApi)
   .addHttpApi(SessionApi)
   .addHttpApi(SyncApi)
-  .addHttpApi(V2Api)
   .addHttpApi(TuiApi)
   .addHttpApi(WorkspaceApi)
   .middleware(SchemaErrorMiddleware)
@@ -70,6 +71,7 @@ export const EntroxHttpApi = HttpApi.make(Brand.command)
   .addHttpApi(RootHttpApi)
   .addHttpApi(EventApi)
   .addHttpApi(InstanceHttpApi)
+  .addHttpApi(V2Api)
   .addHttpApi(PtyConnectApi)
   .annotate(HttpApi.AdditionalSchemas, [EventSchema, Question.Replied, Question.Rejected])
 
