@@ -1,4 +1,5 @@
-import * as Log from "@opencode-ai/core/util/log"
+import { LayerNode } from "@opencode-ai/core/effect/layer-node"
+import { httpClient } from "@opencode-ai/core/effect/layer-node-platform"
 import { serviceUse } from "@opencode-ai/core/effect/service-use"
 import path from "path"
 import { pathToFileURL } from "url"
@@ -9,7 +10,7 @@ import fsNode from "fs/promises"
 import { Flag } from "@opencode-ai/core/flag/flag"
 import { Auth } from "../auth"
 import { Env } from "../env"
-import { applyEdits, findNodeAtLocation, modify, parseTree } from "jsonc-parser"
+import { applyEdits, modify } from "jsonc-parser"
 import { InstallationLocal, InstallationVersion } from "@opencode-ai/core/installation/version"
 import { existsSync } from "fs"
 import { Account } from "@/account/account"
@@ -35,8 +36,6 @@ import { Npm } from "@opencode-ai/core/npm"
 import { withTransientReadRetry } from "@/util/effect-http-client"
 import { Brand } from "@/brand"
 
-const log = Log.create({ service: "config" })
-
 // Custom merge function that concatenates array fields instead of replacing them
 // Keep remeda's deep conditional merge type out of hot config-loading paths; TS profiling showed it dominates here.
 function mergeConfig(target: Info, source: Info): Info {
@@ -51,7 +50,7 @@ function mergeConfigConcatArrays(target: Info, source: Info): Info {
   return merged
 }
 
-function normalizeLoadedConfig(data: unknown, source: string) {
+function normalizeLoadedConfig(data: unknown) {
   if (!isRecord(data)) return data
   const copy = { ...data }
   const hadLegacy = "theme" in copy || "keybinds" in copy || "tui" in copy
@@ -59,7 +58,6 @@ function normalizeLoadedConfig(data: unknown, source: string) {
   delete copy.theme
   delete copy.keybinds
   delete copy.tui
-  log.warn(`tui keys in ${Brand.display} config are deprecated; move them to tui.json`, { path: source })
   return copy
 }
 
@@ -154,7 +152,6 @@ function globalConfigFile() {
 
 function patchJsonc(input: string, patch: unknown, path: string[] = []): string {
   if (!isRecord(patch)) {
-    if (patch === undefined && !jsoncPathExists(input, path)) return input
     const edits = modify(input, path, patch, {
       formattingOptions: {
         insertSpaces: true,
@@ -165,12 +162,6 @@ function patchJsonc(input: string, patch: unknown, path: string[] = []): string 
   }
 
   return Object.entries(patch).reduce((result, [key, value]) => patchJsonc(result, value, [...path, key]), input)
-}
-
-function jsoncPathExists(input: string, path: string[]) {
-  const tree = parseTree(input)
-  if (!tree) return false
-  return findNodeAtLocation(tree, path) !== undefined
 }
 
 function writable(info: Info) {
@@ -228,7 +219,7 @@ export const layer = Layer.effect(
         ),
       )
       const parsed = ConfigParse.jsonc(expanded, source)
-      const data = ConfigParse.schema(ConfigV1.Info, normalizeLoadedConfig(parsed, source), source)
+      const data = ConfigParse.schema(ConfigV1.Info, normalizeLoadedConfig(parsed), source)
       if (!("path" in options)) return data
 
       yield* Effect.promise(() => resolveLoadedPlugins(data, options.path))
@@ -241,7 +232,7 @@ export const layer = Layer.effect(
     })
 
     const loadFile = Effect.fnUntraced(function* (filepath: string, env?: Record<string, string>) {
-      log.info("loading", { path: filepath })
+      yield* Effect.logInfo("loading", { path: filepath })
       const text = yield* readConfigFile(filepath)
       if (!text) return {} as Info
       return yield* loadConfig(text, { path: filepath }, env)
@@ -296,7 +287,7 @@ export const layer = Layer.effect(
     const [cachedGlobal, invalidateGlobal] = yield* Effect.cachedInvalidateWithTTL(
       loadGlobal().pipe(
         Effect.tapError((error) =>
-          Effect.sync(() => log.error("failed to load global config, using defaults", { error: String(error) })),
+          Effect.logError("failed to load global config, using defaults", { error: String(error) }),
         ),
         Effect.orElseSucceed((): Info => ({})),
       ),
@@ -311,7 +302,6 @@ export const layer = Layer.effect(
       const gitignore = path.join(dir, ".gitignore")
       const hasIgnore = yield* fs.existsSafe(gitignore)
       if (!hasIgnore) {
-        yield* fs.ensureDir(dir).pipe(Effect.catch(() => Effect.void))
         yield* fs
           .writeFileString(
             gitignore,
@@ -373,7 +363,7 @@ export const layer = Layer.effect(
             const url = key.replace(/\/+$/, "")
             authEnv[value.key] = value.token
             const wellknownURL = `${url}${Brand.wellKnownPath}`
-            log.debug("fetching remote config", { url: wellknownURL })
+            yield* Effect.logDebug("fetching remote config", { url: wellknownURL })
             const wellknown = yield* fetchRemoteJson(wellknownURL, undefined, ConfigV1.WellKnown)
             const remote = yield* Effect.promise(() =>
               substituteWellKnownRemoteConfig({
@@ -385,7 +375,7 @@ export const layer = Layer.effect(
             )
             const fetchedConfig = remote
               ? yield* Effect.gen(function* () {
-                  log.debug("fetching remote config", { url: remote.url })
+                  yield* Effect.logDebug("fetching remote config", { url: remote.url })
                   const data = yield* fetchRemoteJson(remote.url, remote.headers, Schema.Json)
                   if (isRecord(data) && isRecord(data.config)) return data.config
                   if (isRecord(data)) return data
@@ -406,7 +396,7 @@ export const layer = Layer.effect(
               authEnv,
             )
             yield* merge(source, next, "global")
-            log.debug("loaded remote config from well-known", { url })
+            yield* Effect.logDebug("loaded remote config from well-known", { url })
           }
         }
 
@@ -416,7 +406,7 @@ export const layer = Layer.effect(
         const explicitConfig = Flag.ENTROX_CONFIG ?? Flag.OPENCODE_CONFIG
         if (explicitConfig) {
           yield* merge(explicitConfig, yield* loadFile(explicitConfig, authEnv))
-          log.debug("loaded custom config", { path: explicitConfig })
+          yield* Effect.logDebug("loaded custom config", { path: explicitConfig })
         }
 
         if (!Flag.OPENCODE_DISABLE_PROJECT_CONFIG) {
@@ -434,7 +424,7 @@ export const layer = Layer.effect(
         const directories = yield* ConfigPaths.directories(ctx.directory, ctx.worktree)
 
         if (Flag.ENTROX_CONFIG_DIR || Flag.OPENCODE_CONFIG_DIR) {
-          log.debug("loading config from custom config directory", {
+          yield* Effect.logDebug("loading config from custom config directory", {
             path: Flag.ENTROX_CONFIG_DIR ?? Flag.OPENCODE_CONFIG_DIR,
           })
         }
@@ -444,7 +434,7 @@ export const layer = Layer.effect(
         for (const dir of directories) {
           if (ConfigPaths.isProjectDirectory(dir) || dir === Flag.ENTROX_CONFIG_DIR || dir === Flag.OPENCODE_CONFIG_DIR) {
             for (const source of ConfigPaths.fileInDirectory(dir, Brand.legacyConfigBase)) {
-              log.debug(`loading config from ${source}`)
+              yield* Effect.logDebug(`loading config from ${source}`)
               yield* merge(source, yield* loadFile(source, authEnv))
               result.agent ??= {}
               result.mode ??= {}
@@ -467,9 +457,7 @@ export const layer = Layer.effect(
               Effect.exit,
               Effect.tap((exit) =>
                 Exit.isFailure(exit)
-                  ? Effect.sync(() => {
-                      log.warn("background dependency install failed", { dir, error: String(exit.cause) })
-                    })
+                  ? Effect.logWarning("background dependency install failed", { dir, error: String(exit.cause) })
                   : Effect.void,
               ),
               Effect.asVoid,
@@ -480,7 +468,7 @@ export const layer = Layer.effect(
           result.command = mergeDeep(result.command ?? {}, yield* Effect.promise(() => ConfigCommand.load(dir)))
           result.agent = mergeDeep(result.agent ?? {}, yield* Effect.promise(() => ConfigAgent.load(dir)))
           result.agent = mergeDeep(result.agent ?? {}, yield* Effect.promise(() => ConfigAgent.loadMode(dir)))
-          // Auto-discovered plugins under project config plugin directories are already local files, so ConfigPlugin.load
+          // Auto-discovered plugins under `.opencode/plugin(s)` are already local files, so ConfigPlugin.load
           // returns normalized Specs and we only need to attach origin metadata here.
           const list = yield* Effect.promise(() => ConfigPlugin.load(dir))
           yield* mergePluginOrigins(dir, list)
@@ -494,7 +482,7 @@ export const layer = Layer.effect(
             source,
           })
           yield* merge(source, next, "local")
-          log.debug("loaded custom config from environment content", { source })
+          yield* Effect.logDebug("loaded custom config from environment content", { source })
         }
 
         const activeAccount = Option.getOrUndefined(
@@ -527,12 +515,11 @@ export const layer = Layer.effect(
             }
           }).pipe(
             Effect.withSpan("Config.loadActiveOrgConfig"),
-            Effect.catch((err) => {
-              log.debug("failed to fetch remote account config", {
+            Effect.catch((err) =>
+              Effect.logDebug("failed to fetch remote account config", {
                 error: err instanceof Error ? err.message : String(err),
-              })
-              return Effect.void
-            }),
+              }),
+            ),
           )
         }
 
@@ -568,7 +555,7 @@ export const layer = Layer.effect(
           try {
             result.permission = mergeDeep(result.permission ?? {}, JSON.parse(Flag.OPENCODE_PERMISSION))
           } catch (err) {
-            log.warn("OPENCODE_PERMISSION contains invalid JSON, skipping", { err })
+            yield* Effect.logWarning("OPENCODE_PERMISSION contains invalid JSON, skipping", { err })
           }
         }
 
@@ -589,7 +576,7 @@ export const layer = Layer.effect(
           try {
             result.username = os.userInfo().username || "user"
           } catch (err) {
-            log.warn("failed to read system username, using fallback", { err })
+            yield* Effect.logWarning("failed to read system username, using fallback", { err })
             result.username = "user"
           }
         }
@@ -703,5 +690,7 @@ export const defaultLayer = layer.pipe(
   Layer.provide(Npm.defaultLayer),
   Layer.provide(FetchHttpClient.layer),
 )
+
+export const node = LayerNode.make(layer, [FSUtil.node, Auth.node, Account.node, Env.node, Npm.node, httpClient])
 
 export * as Config from "./config"

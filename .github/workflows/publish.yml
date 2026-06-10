@@ -468,6 +468,7 @@ jobs:
         with:
           pattern: entrox-desktop-*
           path: /tmp/desktop-artifacts
+          merge-multiple: true
 
       - name: Upload desktop assets to Aliyun OSS mirror
         if: needs.version.outputs.release
@@ -578,6 +579,19 @@ jobs:
           git config --global user.email "entrox@996icu.wiki"
           git config --global user.name "entrox"
           ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts || true
+
+      - name: Upload desktop release assets
+        if: needs.version.outputs.release
+        env:
+          GH_TOKEN: ${{ steps.committer.outputs.token }}
+        run: |
+          shopt -s nullglob
+          files=(/tmp/desktop-artifacts/*.{exe,blockmap,dmg,zip,AppImage,deb,rpm} /tmp/desktop-artifacts/*.app.tar.gz)
+          if (( ${#files[@]} == 0 )); then
+            echo "No desktop release assets found"
+            exit 1
+          fi
+          gh release upload "v${{ needs.version.outputs.version }}" "${files[@]}" --clobber --repo "${{ needs.version.outputs.repo }}"
 
       - run: ./script/publish.ts
         env:

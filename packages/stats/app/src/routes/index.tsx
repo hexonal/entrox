@@ -927,6 +927,11 @@ function LeaderboardCard(props: {
   active: boolean
   onActiveModelChange: (model: string | undefined) => void
 }) {
+  const change = () => props.entry.change
+  const isNegativeChange = () => {
+    const value = change()
+    return value !== null && value < 0
+  }
   return (
     <a
       data-component="leader-card"
@@ -956,8 +961,8 @@ function LeaderboardCard(props: {
           </div>
           <div>
             <span>{props.entry.author}</span>
-            <span data-slot="delta" data-negative={props.entry.change < 0 ? "true" : undefined}>
-              {formatChange(props.entry.change)}
+            <span data-slot="delta" data-negative={isNegativeChange() ? "true" : undefined}>
+              {formatChange(change())}
             </span>
           </div>
         </div>
@@ -978,7 +983,8 @@ function formatBillions(value: number) {
   return `${value}B`
 }
 
-function formatChange(value: number) {
+function formatChange(value: number | null) {
+  if (value === null) return "0%"
   if (value > 0) return `+${value}%`
   return `${value}%`
 }

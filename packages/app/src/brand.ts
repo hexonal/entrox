@@ -1,6 +1,7 @@
 export const Brand = {
   product: "Entrox",
   command: "entrox",
+  legacyCommand: "opencode",
   domain: "entrox.996icu.wiki",
   docsURL: "https://entrox.996icu.wiki/docs",
   authURL: "https://entrox.996icu.wiki/auth",

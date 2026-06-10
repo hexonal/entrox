@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { isUpdateNewerThan, updateNoticeVersion } from "../../../src/cli/cmd/tui/update-notice"
+import { isUpdateNewerThan, updateNoticeVersion } from "@opencode-ai/tui/update-notice"
 
 describe("update notice", () => {
   test("treats newer ci versions as available", () => {

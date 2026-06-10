@@ -30,7 +30,6 @@ import {
   type SetSessionModeResponse,
 } from "@agentclientprotocol/sdk"
 import { InstallationVersion } from "@opencode-ai/core/installation/version"
-import * as Log from "@opencode-ai/core/util/log"
 import type { Message, OpencodeClient, SessionMessageResponse } from "@opencode-ai/sdk/v2"
 import { Context, Effect, Layer, ManagedRuntime } from "effect"
 import * as ACPError from "./error"
@@ -48,7 +47,9 @@ import type { Command } from "@/command"
 import { Brand } from "@/brand"
 
 export const AuthMethodID = `${Brand.command}-login`
-const log = Log.create({ service: "acp-service" })
+const log = {
+  error: console.error.bind(console),
+}
 
 export type Error = ACPError.Error
 type ServiceConnection = Pick<AgentSideConnection, "sessionUpdate"> &

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { lspEmptyMessage } from "../../../../src/cli/cmd/tui/feature-plugins/sidebar/lsp"
+import { lspEmptyMessage } from "@opencode-ai/tui/feature-plugins/sidebar/lsp"
 
 describe("lspEmptyMessage", () => {
   test("explains how to enable LSP when it is disabled", () => {
