@@ -6,12 +6,18 @@ import { promisify } from "node:util"
 import type { Configuration } from "electron-builder"
 
 const execFileAsync = promisify(execFile)
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
+const packageDir = path.dirname(fileURLToPath(import.meta.url))
+const rootDir = path.resolve(packageDir, "../..")
 const signScript = path.join(rootDir, "script", "sign-windows.ps1")
 const product = "Entrox"
 const packageName = "entrox"
-const appId = "wiki.996icu.entrox.desktop"
+const baseAppId = "wiki.996icu.entrox.desktop"
 const publishOwner = "hexonal"
+// The Electron 42 packaging update briefly installed Linux launchers/icons under
+// "opencode-desktop". Keep that hidden desktop entry around so existing GNOME/KDE
+// pins still resolve after the canonical Entrox app id change.
+const legacyDesktopEntry = path.join(packageDir, "resources", "linux", "opencode-desktop.desktop")
+const legacyDesktopEntryFpm = `${legacyDesktopEntry}=/usr/share/applications/opencode-desktop.desktop`
 
 async function signWindows(configuration: { path: string }) {
   if (process.platform !== "win32") return
@@ -30,11 +36,25 @@ const channel = (() => {
   return "dev"
 })()
 
-const getBase = (): Configuration => ({
+const APP_IDS = {
+  dev: `${baseAppId}.dev`,
+  beta: `${baseAppId}.beta`,
+  prod: baseAppId,
+} as const
+
+const getBase = (appId: string): Configuration => ({
   artifactName: "entrox-desktop-${os}-${arch}.${ext}",
   directories: {
     output: "dist",
     buildResources: "resources",
+  },
+  // Linux launchers are .desktop files, so this is the desktop file name,
+  // not just the app id. For prod, app id "wiki.996icu.entrox.desktop" becomes
+  // "wiki.996icu.entrox.desktop.desktop".
+  // https://developer.gnome.org/documentation/guidelines/maintainer/integrating.html
+  // https://www.electron.build/docs/linux/
+  extraMetadata: {
+    desktopName: `${appId}.desktop`,
   },
   files: ["out/**/*", "resources/**/*"],
   extraResources: [
@@ -78,19 +98,27 @@ const getBase = (): Configuration => ({
   linux: {
     icon: `resources/icons`,
     category: "Development",
-    executableName: "opencode-desktop",
+    executableName: appId,
+    desktop: {
+      entry: {
+        // Match the installed .desktop file and hicolor icon basename so
+        // Linux shells can associate the running Electron window with its launcher.
+        StartupWMClass: appId,
+      },
+    },
     target: ["AppImage", "deb", "rpm"],
   },
 })
 
 function getConfig() {
-  const base = getBase()
+  const appId = APP_IDS[channel]
+  const base = getBase(appId)
 
   switch (channel) {
     case "dev": {
       return {
         ...base,
-        appId: `${appId}.dev`,
+        appId,
         productName: `${product} Dev`,
         rpm: { packageName: `${packageName}-dev` },
       }
@@ -98,7 +126,7 @@ function getConfig() {
     case "beta": {
       return {
         ...base,
-        appId: `${appId}.beta`,
+        appId,
         productName: `${product} Beta`,
         protocols: { name: `${product} Beta`, schemes: ["entrox", "opencode"] },
         publish: { provider: "github", owner: publishOwner, repo: `${packageName}-beta`, channel: "latest" },
@@ -112,7 +140,8 @@ function getConfig() {
         productName: product,
         protocols: { name: product, schemes: ["entrox", "opencode"] },
         publish: { provider: "github", owner: publishOwner, repo: packageName, channel: "latest" },
-        rpm: { packageName },
+        deb: { fpm: [legacyDesktopEntryFpm] },
+        rpm: { packageName, fpm: [legacyDesktopEntryFpm] },
       }
     }
   }

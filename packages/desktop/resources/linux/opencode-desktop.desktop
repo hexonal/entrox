@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Entrox
+Exec=/opt/Entrox/wiki.996icu.entrox.desktop %U
+Terminal=false
+Type=Application
+Icon=wiki.996icu.entrox.desktop
+StartupWMClass=wiki.996icu.entrox.desktop
+NoDisplay=true
+Comment=Entrox AI coding agent
+Categories=Development;
