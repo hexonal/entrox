@@ -28,7 +28,10 @@ import {
   type ThemePreference,
 } from "../stats-shell"
 
-const statsLabFallbackUrl = "https://stats.opencode.ai"
+const statsCanonicalBaseUrl = "https://stats.entrox.996icu.wiki/"
+const statsUnfurlPath = "banner.png"
+const statsUnfurlAlt = "Entrox Data wordmark on a dark patterned background"
+const statsUnfurlUrl = new URL(statsUnfurlPath, statsCanonicalBaseUrl).toString()
 const labHeaderLinks: readonly HeaderLink[] = [
   { href: "#overview", label: "Overview" },
   { href: "#usage", label: "Usage" },
@@ -66,17 +69,12 @@ export default function StatsLab() {
   const githubStars = createAsync(() => getGitHubStars())
   const [themePreference, setThemePreference] = createSignal<ThemePreference>("system")
   const labName = createMemo(() => lab()?.name ?? formatCatalogLabName(labParam()))
-  const labTitle = createMemo(() => `${labName()} Models`)
+  const labTitle = createMemo(() => `${labName()} AI Model Usage & Rankings | Entrox Data`)
   const labDescription = createMemo(
     () =>
-      `Explore ${labName()} models used in OpenCode, with recent token usage, context windows, release dates, and model-specific data.`,
+      `Compare ${labName()} models used in Entrox Go, including token usage, model rankings, context windows, release dates, costs, and model-specific data.`,
   )
-  const labUrl = createMemo(() =>
-    new URL(
-      `${import.meta.env.BASE_URL}${lab()?.id ?? labParam()}`,
-      event?.request.url ?? (typeof window === "undefined" ? statsLabFallbackUrl : window.location.href),
-    ).toString(),
-  )
+  const labUrl = createMemo(() => new URL(lab()?.id ?? labParam(), statsCanonicalBaseUrl).toString())
   const updateThemePreference = (preference: ThemePreference) => {
     applyThemePreference(preference)
     setThemePreference(preference)
@@ -98,13 +96,20 @@ export default function StatsLab() {
       <Meta name="description" content={labDescription()} />
       <Link rel="canonical" href={labUrl()} />
       <Meta property="og:type" content="website" />
-      <Meta property="og:site_name" content="OpenCode" />
+      <Meta property="og:site_name" content="Entrox" />
       <Meta property="og:title" content={labTitle()} />
       <Meta property="og:description" content={labDescription()} />
       <Meta property="og:url" content={labUrl()} />
-      <Meta name="twitter:card" content="summary" />
+      <Meta property="og:image" content={statsUnfurlUrl} />
+      <Meta property="og:image:type" content="image/png" />
+      <Meta property="og:image:width" content="1200" />
+      <Meta property="og:image:height" content="630" />
+      <Meta property="og:image:alt" content={statsUnfurlAlt} />
+      <Meta name="twitter:card" content="summary_large_image" />
       <Meta name="twitter:title" content={labTitle()} />
       <Meta name="twitter:description" content={labDescription()} />
+      <Meta name="twitter:image" content={statsUnfurlUrl} />
+      <Meta name="twitter:image:alt" content={statsUnfurlAlt} />
       <Header githubStars={githubStars() ?? "150K"} links={labHeaderLinks} brandHref={import.meta.env.BASE_URL} />
       <div data-component="container">
         <div data-component="content">
@@ -139,7 +144,7 @@ function LabLoading() {
             Data
           </a>
           <h1>Model Lab</h1>
-          <p>Reading model availability and recent OpenCode usage.</p>
+          <p>Reading model availability and recent Entrox usage.</p>
         </div>
       </div>
     </section>
@@ -182,7 +187,7 @@ function LabHero(props: { lab: ModelCatalogLab; stats: StatsLabData | null }) {
           <h1>{props.lab.name}</h1>
           <div data-slot="model-hero-pattern" aria-hidden="true" />
           <p>
-            Explore {props.lab.models.length} {props.lab.name} models used in OpenCode
+            Explore {props.lab.models.length} {props.lab.name} models used in Entrox
             <Show when={featuredModels().length > 0}> including {formatList(featuredModels())}</Show>. Compare recent
             token usage, context windows, release dates, and model-specific data.
           </p>
@@ -192,7 +197,7 @@ function LabHero(props: { lab: ModelCatalogLab; stats: StatsLabData | null }) {
           <strong>{props.stats ? formatTokens(props.stats.totals.tokens) : "Pending"}</strong>
           <p>
             {props.stats
-              ? `${formatPercent(props.stats.tokenShare)} of recent OpenCode usage`
+              ? `${formatPercent(props.stats.tokenShare)} of recent Entrox usage`
               : latest()
                 ? `Latest release ${formatCatalogDate(latest())}`
                 : "Usage appears after model activity lands"}
@@ -217,7 +222,7 @@ function LabUsageSection(props: { lab: ModelCatalogLab; data: StatsLabData | nul
     <section id="usage" data-section="model-panel">
       <p data-slot="section-title">
         <strong>{props.lab.name} token usage.</strong>{" "}
-        <span>Daily OpenCode token volume over the last two months.</span>
+        <span>Daily Entrox token volume over the last two months.</span>
       </p>
       <Show
         when={usage().some((item) => item.tokens > 0)}

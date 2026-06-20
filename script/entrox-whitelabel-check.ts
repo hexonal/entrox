@@ -75,6 +75,7 @@ const allowedFragments = [
   ".opencode",
   "opencode.json",
   "opencode/",
+  "opencode-desktop.desktop",
   "opencode-agent[bot]",
 ] as const
 

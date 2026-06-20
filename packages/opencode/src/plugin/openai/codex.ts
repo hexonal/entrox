@@ -6,6 +6,7 @@ import { setTimeout as sleep } from "node:timers/promises"
 import { createServer } from "http"
 import { Brand, brandUserAgent } from "@/brand"
 import { OpenAIWebSocketPool } from "./ws-pool"
+import { escapeHtml } from "@/util/html"
 
 const CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann"
 const ISSUER = "https://auth.openai.com"
@@ -179,7 +180,7 @@ const HTML_SUCCESS = `<!doctype html>
   </body>
 </html>`
 
-const HTML_ERROR = (error: string) => `<!doctype html>
+export const renderOAuthError = (error: string) => `<!doctype html>
 <html>
   <head>
     <title>${Brand.name} - Codex Authorization Failed</title>
@@ -222,7 +223,7 @@ const HTML_ERROR = (error: string) => `<!doctype html>
     <div class="container">
       <h1>Authorization Failed</h1>
       <p>An error occurred during authorization.</p>
-      <div class="error">${error}</div>
+      <div class="error">${escapeHtml(error)}</div>
     </div>
   </body>
 </html>`
@@ -255,8 +256,8 @@ async function startOAuthServer(): Promise<{ port: number; redirectUri: string }
         const errorMsg = errorDescription || error
         pendingOAuth?.reject(new Error(errorMsg))
         pendingOAuth = undefined
-        res.writeHead(200, { "Content-Type": "text/html" })
-        res.end(HTML_ERROR(errorMsg))
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" })
+        res.end(renderOAuthError(errorMsg))
         return
       }
 
@@ -264,8 +265,8 @@ async function startOAuthServer(): Promise<{ port: number; redirectUri: string }
         const errorMsg = "Missing authorization code"
         pendingOAuth?.reject(new Error(errorMsg))
         pendingOAuth = undefined
-        res.writeHead(400, { "Content-Type": "text/html" })
-        res.end(HTML_ERROR(errorMsg))
+        res.writeHead(400, { "Content-Type": "text/html; charset=utf-8" })
+        res.end(renderOAuthError(errorMsg))
         return
       }
 
@@ -273,8 +274,8 @@ async function startOAuthServer(): Promise<{ port: number; redirectUri: string }
         const errorMsg = "Invalid state - potential CSRF attack"
         pendingOAuth?.reject(new Error(errorMsg))
         pendingOAuth = undefined
-        res.writeHead(400, { "Content-Type": "text/html" })
-        res.end(HTML_ERROR(errorMsg))
+        res.writeHead(400, { "Content-Type": "text/html; charset=utf-8" })
+        res.end(renderOAuthError(errorMsg))
         return
       }
 
@@ -285,7 +286,7 @@ async function startOAuthServer(): Promise<{ port: number; redirectUri: string }
         .then((tokens) => current.resolve(tokens))
         .catch((err) => current.reject(err))
 
-      res.writeHead(200, { "Content-Type": "text/html" })
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" })
       res.end(HTML_SUCCESS)
       return
     }

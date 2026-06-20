@@ -8,7 +8,10 @@ function AppMeta() {
   return (
     <>
       <Title>Entrox Stats</Title>
-      <Meta name="description" content="Entrox usage, market share, token cost, and session cost stats." />
+      <Meta
+        name="description"
+        content="Explore Entrox usage across AI models, including token volume, rankings, market share, token pricing, session cost, cache ratio, and geo breakdowns."
+      />
     </>
   )
 }

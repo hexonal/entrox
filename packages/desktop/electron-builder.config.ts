@@ -14,8 +14,8 @@ const packageName = "entrox"
 const baseAppId = "wiki.996icu.entrox.desktop"
 const publishOwner = "hexonal"
 // The Electron 42 packaging update briefly installed Linux launchers/icons under
-// "opencode-desktop". Keep that hidden desktop entry around so existing GNOME/KDE
-// pins still resolve after the canonical Entrox app id change.
+// the upstream desktop id. Keep that hidden desktop entry around so existing
+// GNOME/KDE pins still resolve after the canonical Entrox app id change.
 const legacyDesktopEntry = path.join(packageDir, "resources", "linux", "opencode-desktop.desktop")
 const legacyDesktopEntryFpm = `${legacyDesktopEntry}=/usr/share/applications/opencode-desktop.desktop`
 
