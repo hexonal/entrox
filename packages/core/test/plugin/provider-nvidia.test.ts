@@ -5,7 +5,7 @@ import { PluginV2 } from "@opencode-ai/core/plugin"
 import { ProviderPlugins } from "@opencode-ai/core/plugin/provider"
 import { NvidiaPlugin } from "@opencode-ai/core/plugin/provider/nvidia"
 import { ProviderV2 } from "@opencode-ai/core/provider"
-import { expectPluginRegistered, it, provider } from "./provider-helper"
+import { addPlugin, expectPluginRegistered, it, provider, required } from "./provider-helper"
 
 describe("NvidiaPlugin", () => {
   it.effect("is registered so legacy referer headers can be applied", () =>
@@ -21,9 +21,7 @@ describe("NvidiaPlugin", () => {
     Effect.gen(function* () {
       const plugin = yield* PluginV2.Service
       const catalog = yield* Catalog.Service
-      yield* plugin.add(NvidiaPlugin)
-      const transform = yield* catalog.transform()
-      yield* transform((catalog) => {
+      yield* catalog.transform((catalog) => {
         const nvidia = provider("nvidia", {
           api: { type: "aisdk", package: "@ai-sdk/openai-compatible", url: "https://integrate.api.nvidia.com/v1" },
           request: { headers: { Existing: "value" }, body: {} },
@@ -34,13 +32,14 @@ describe("NvidiaPlugin", () => {
         })
         catalog.provider.update(provider("openrouter").id, () => {})
       })
-      expect((yield* catalog.provider.get(ProviderV2.ID.make("nvidia"))).request.headers).toEqual({
+      yield* addPlugin(plugin, NvidiaPlugin)
+      expect(required(yield* catalog.provider.get(ProviderV2.ID.make("nvidia"))).request.headers).toEqual({
         Existing: "value",
         "HTTP-Referer": "https://entrox.996icu.wiki/",
         "X-Title": "entrox",
         "X-BILLING-INVOKE-ORIGIN": "Entrox",
       })
-      expect((yield* catalog.provider.get(ProviderV2.ID.openrouter)).request.headers).toEqual({})
+      expect(required(yield* catalog.provider.get(ProviderV2.ID.openrouter)).request.headers).toEqual({})
     }),
   )
 
@@ -48,9 +47,7 @@ describe("NvidiaPlugin", () => {
     Effect.gen(function* () {
       const plugin = yield* PluginV2.Service
       const catalog = yield* Catalog.Service
-      yield* plugin.add(NvidiaPlugin)
-      const transform = yield* catalog.transform()
-      yield* transform((catalog) => {
+      yield* catalog.transform((catalog) => {
         const item = provider("nvidia", {
           api: { type: "aisdk", package: "@ai-sdk/openai-compatible", url: "https://integrate.api.nvidia.com/v1" },
           request: { headers: {}, body: {} },
@@ -60,8 +57,9 @@ describe("NvidiaPlugin", () => {
           draft.request = item.request
         })
       })
+      yield* addPlugin(plugin, NvidiaPlugin)
 
-      expect((yield* catalog.provider.get(ProviderV2.ID.make("nvidia"))).request.headers).toEqual({
+      expect(required(yield* catalog.provider.get(ProviderV2.ID.make("nvidia"))).request.headers).toEqual({
         "HTTP-Referer": "https://entrox.996icu.wiki/",
         "X-Title": "entrox",
         "X-BILLING-INVOKE-ORIGIN": "Entrox",
@@ -73,9 +71,7 @@ describe("NvidiaPlugin", () => {
     Effect.gen(function* () {
       const plugin = yield* PluginV2.Service
       const catalog = yield* Catalog.Service
-      yield* plugin.add(NvidiaPlugin)
-      const transform = yield* catalog.transform()
-      yield* transform((catalog) => {
+      yield* catalog.transform((catalog) => {
         const item = provider("nvidia", {
           api: { type: "aisdk", package: "@ai-sdk/openai-compatible", url: "https://integrate.api.nvidia.com/v1" },
           request: {
@@ -88,8 +84,9 @@ describe("NvidiaPlugin", () => {
           draft.request = item.request
         })
       })
+      yield* addPlugin(plugin, NvidiaPlugin)
 
-      expect((yield* catalog.provider.get(ProviderV2.ID.make("nvidia"))).request.headers).toEqual({
+      expect(required(yield* catalog.provider.get(ProviderV2.ID.make("nvidia"))).request.headers).toEqual({
         "HTTP-Referer": "https://entrox.996icu.wiki/",
         "X-Title": "entrox",
         "X-BILLING-INVOKE-ORIGIN": "CustomOrigin",
