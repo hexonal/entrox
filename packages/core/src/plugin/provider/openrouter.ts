@@ -1,7 +1,7 @@
 import { Effect } from "effect"
 import { ModelV2 } from "../../model"
 import { ProviderBrand } from "../../brand"
-import { define } from "@opencode-ai/plugin/v2/effect"
+import { define } from "../internal"
 
 export const OpenRouterPlugin = define({
   id: "openrouter",
@@ -26,8 +26,7 @@ export const OpenRouterPlugin = define({
         }
       }),
     )
-    yield* ctx.aisdk.hook(
-      "sdk",
+    yield* ctx.aisdk.sdk(
       Effect.fn(function* (evt) {
         if (evt.package !== "@openrouter/ai-sdk-provider") return
         const mod = yield* Effect.promise(() => import("@openrouter/ai-sdk-provider"))

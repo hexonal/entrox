@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import { ProviderBrand } from "../../brand"
-import { define } from "@opencode-ai/plugin/v2/effect"
+import { define } from "../internal"
 
 export const NvidiaPlugin = define({
   id: "nvidia",

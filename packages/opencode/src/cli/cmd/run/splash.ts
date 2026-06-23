@@ -235,7 +235,7 @@ function build(input: SplashWriterInput, kind: "entry" | "exit", ctx: Scrollback
       lines,
       body_left + label.length,
       top + 1,
-      `${Brand.command} run -i -s ${meta.session_id}`,
+      `${Brand.command} --mini -s ${meta.session_id}`,
       right,
       undefined,
       TextAttributes.BOLD,

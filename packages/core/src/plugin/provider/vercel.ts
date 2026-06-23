@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import { ProviderBrand } from "../../brand"
-import { define } from "@opencode-ai/plugin/v2/effect"
+import { define } from "../internal"
 
 export const VercelPlugin = define({
   id: "vercel",
@@ -17,8 +17,7 @@ export const VercelPlugin = define({
         }
       }),
     )
-    yield* ctx.aisdk.hook(
-      "sdk",
+    yield* ctx.aisdk.sdk(
       Effect.fn(function* (evt) {
         if (evt.package !== "@ai-sdk/vercel") return
         const mod = yield* Effect.promise(() => import("@ai-sdk/vercel"))
