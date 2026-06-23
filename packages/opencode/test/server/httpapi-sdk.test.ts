@@ -20,9 +20,10 @@ import { Session as SessionNs } from "@/session/session"
 import { errorMessage } from "../../src/util/error"
 import { TestLLMServer } from "../lib/llm-server"
 import path from "path"
+import * as fs from "node:fs/promises"
 import { resetDatabase } from "../fixture/db"
 import { disposeAllInstances, TestInstance, tmpdirScoped } from "../fixture/fixture"
-import { awaitWithTimeout, testEffect } from "../lib/effect"
+import { awaitWithTimeout, pollWithTimeout, testEffect } from "../lib/effect"
 import { testProviderConfig } from "../lib/test-provider"
 import { ProviderV2 } from "@opencode-ai/core/provider"
 import { ModelV2 } from "@opencode-ai/core/model"
@@ -199,6 +200,7 @@ function resetState() {
   return Effect.promise(async () => {
     await disposeAllInstances()
     await resetDatabase()
+    await fs.rm(path.join(Global.Path.data, "auth.json"), { force: true })
   })
 }
 
@@ -341,6 +343,7 @@ afterEach(async () => {
   Flag.OPENCODE_SERVER_USERNAME = original.OPENCODE_SERVER_USERNAME
   await disposeAllInstances()
   await resetDatabase()
+  await fs.rm(path.join(Global.Path.data, "auth.json"), { force: true })
 })
 
 describe("HttpApi SDK", () => {
@@ -420,7 +423,12 @@ describe("HttpApi SDK", () => {
           workspaceID,
           onRequest: (value) => (request = value),
         })
-        const found = yield* call(() => sdk.v2.fs.find({ query: "hello", type: "file" }))
+        const found = yield* pollWithTimeout(
+          call(() => sdk.v2.fs.find({ query: "hello", type: "file" })).pipe(
+            Effect.map((result) => (result.data?.data.length ? result : undefined)),
+          ),
+          "SDK file search index was not ready",
+        )
         const url = new URL(request!.url)
 
         expect(found.response.status).toBe(200)
