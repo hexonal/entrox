@@ -1,6 +1,7 @@
 import { Schema } from "effect"
 import { HttpApi } from "effect/unstable/httpapi"
 import { EventV2 } from "@opencode-ai/core/event"
+import { EventManifest } from "@/event-manifest"
 import { Credential } from "@opencode-ai/core/credential"
 import { Integration } from "@opencode-ai/core/integration"
 import { SkillV2 } from "@opencode-ai/core/skill"
@@ -24,16 +25,14 @@ import { SessionApi } from "./groups/session"
 import { SyncApi } from "./groups/sync"
 import { TuiApi } from "./groups/tui"
 import { WorkspaceApi } from "./groups/workspace"
-import { Api } from "@opencode-ai/server/api"
-// GlobalEventSchema snapshots the registry after event-producing groups register their variants.
+import { makeApi } from "@opencode-ai/server/api"
 import { GlobalApi } from "./groups/global"
 import { Authorization } from "./middleware/authorization"
 import { SchemaErrorMiddleware } from "./middleware/schema-error"
 import { Brand } from "@/brand"
 
 const EventSchema = Schema.Union([
-  ...EventV2.registry
-    .values()
+  ...EventManifest.Latest.values()
     .map((definition) =>
       Schema.Struct({
         id: EventV2.ID,
@@ -44,6 +43,8 @@ const EventSchema = Schema.Union([
     .toArray(),
   InstanceDisposed,
 ]).annotate({ identifier: "Event" })
+
+export const ServerApi = makeApi(EventManifest.Latest.values().toArray())
 
 export const RootHttpApi = HttpApi.make(`${Brand.command}-root`)
   .addHttpApi(ControlApi)
@@ -74,7 +75,7 @@ export const EntroxHttpApi = HttpApi.make(Brand.command)
   .addHttpApi(RootHttpApi)
   .addHttpApi(EventApi)
   .addHttpApi(InstanceHttpApi)
-  .addHttpApi(Api)
+  .addHttpApi(ServerApi)
   .addHttpApi(PtyConnectApi)
   .annotate(HttpApi.AdditionalSchemas, [
     EventSchema,

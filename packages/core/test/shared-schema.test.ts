@@ -19,7 +19,6 @@ import { Credential } from "@opencode-ai/schema/credential"
 import { FileSystem } from "@opencode-ai/schema/filesystem"
 import { Integration } from "@opencode-ai/schema/integration"
 import { LLM } from "@opencode-ai/schema/llm"
-import { ModelRequest } from "@opencode-ai/schema/model-request"
 import { Permission } from "@opencode-ai/schema/permission"
 import { Reference } from "@opencode-ai/schema/reference"
 import { Skill } from "@opencode-ai/schema/skill"
@@ -35,7 +34,6 @@ test("Core reuses the canonical shared schemas", async () => {
     coreIntegration,
     coreLocation,
     coreLLM,
-    coreModelRequest,
     corePermission,
     coreProject,
     coreReference,
@@ -49,12 +47,11 @@ test("Core reuses the canonical shared schemas", async () => {
     import("@opencode-ai/core/command"),
     import("@opencode-ai/core/integration/connection"),
     import("@opencode-ai/core/credential"),
-    import("@opencode-ai/core/filesystem/schema"),
+    import("@opencode-ai/core/filesystem"),
     import("@opencode-ai/core/integration"),
     import("@opencode-ai/core/location"),
     import("@opencode-ai/llm"),
-    import("@opencode-ai/core/model-request"),
-    import("@opencode-ai/core/permission/schema"),
+    import("@opencode-ai/core/permission"),
     import("@opencode-ai/core/project/schema"),
     import("@opencode-ai/core/reference"),
     import("@opencode-ai/core/session/input"),
@@ -80,6 +77,8 @@ test("Core reuses the canonical shared schemas", async () => {
     [coreFileSystem.Entry, FileSystem.Entry],
     [coreFileSystem.Submatch, FileSystem.Submatch],
     [coreFileSystem.Match, FileSystem.Match],
+    [coreIntegration.ID, Integration.ID],
+    [coreIntegration.MethodID, Integration.MethodID],
     [coreIntegration.When, Integration.When],
     [coreIntegration.TextPrompt, Integration.TextPrompt],
     [coreIntegration.SelectPrompt, Integration.SelectPrompt],
@@ -109,8 +108,6 @@ test("Core reuses the canonical shared schemas", async () => {
     [ProviderV2.Api, Provider.Api],
     [ProviderV2.Request, Provider.Request],
     [ProviderV2.Info, Provider.Info],
-    [coreModelRequest.Generation, ModelRequest.Generation],
-    [coreModelRequest.Request, ModelRequest.Request],
     [corePermission.Effect, Permission.Effect],
     [corePermission.Rule, Permission.Rule],
     [corePermission.Ruleset, Permission.Ruleset],

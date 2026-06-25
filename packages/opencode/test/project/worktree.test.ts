@@ -6,6 +6,7 @@ import { Cause, Deferred, Effect, Exit, Fiber, Layer } from "effect"
 import { GlobalBus, type GlobalEvent } from "../../src/bus/global"
 import { Git } from "../../src/git"
 import { Worktree } from "../../src/worktree"
+import { Brand } from "../../src/brand"
 import { disposeAllInstances, provideInstance, TestInstance } from "../fixture/fixture"
 import { testEffect } from "../lib/effect"
 
@@ -84,7 +85,7 @@ describe("Worktree", () => {
 
           expect(info.name).toBeDefined()
           expect(typeof info.name).toBe("string")
-          expect(info.branch).toBe(`opencode/${info.name}`)
+          expect(info.branch).toBe(`${Brand.command}/${info.name}`)
           expect(info.directory).toContain(info.name)
         }),
       { git: true },
@@ -98,7 +99,7 @@ describe("Worktree", () => {
           const info = yield* svc.makeWorktreeInfo({ name: "my-feature" })
 
           expect(info.name).toBe("my-feature")
-          expect(info.branch).toBe("opencode/my-feature")
+          expect(info.branch).toBe(`${Brand.command}/my-feature`)
         }),
       { git: true },
     )
@@ -180,7 +181,7 @@ describe("Worktree", () => {
         withCreatedWorktree(undefined, ({ info }) =>
           Effect.gen(function* () {
             expect(info.name).toBeDefined()
-            expect(info.branch ?? "").toStartWith("opencode/")
+            expect(info.branch ?? "").toStartWith(`${Brand.command}/`)
             expect(info.directory).toBeDefined()
           }),
         ),
@@ -195,7 +196,7 @@ describe("Worktree", () => {
             const svc = yield* Worktree.Service
 
             expect(info.name).toBeDefined()
-            expect(info.branch ?? "").toStartWith("opencode/")
+            expect(info.branch ?? "").toStartWith(`${Brand.command}/`)
 
             expect(ready.name).toBe(info.name)
             expect(ready.branch).toBe(info.branch)
@@ -229,7 +230,7 @@ describe("Worktree", () => {
         withCreatedWorktree({ name: "test-workspace" }, ({ info }) =>
           Effect.gen(function* () {
             expect(info.name).toBe("test-workspace")
-            expect(info.branch).toBe("opencode/test-workspace")
+            expect(info.branch).toBe(`${Brand.command}/test-workspace`)
           }),
         ),
       { git: true },

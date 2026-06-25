@@ -16,6 +16,7 @@ const emptyMcp = Layer.succeed(
     prompts: () => Effect.succeed({}),
     resources: () => Effect.succeed({}),
     resourceTemplates: () => Effect.succeed({}),
+    instructions: () => Effect.succeed([]),
     add: () => Effect.succeed({ status: {} }),
     connect: () => Effect.void,
     disconnect: () => Effect.void,
