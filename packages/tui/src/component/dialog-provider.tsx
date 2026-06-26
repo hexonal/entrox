@@ -487,8 +487,8 @@ function ApiMethod(props: ApiMethodProps) {
     <DialogPrompt
       title={props.title}
       placeholder="API key"
-      description={() =>
-        ({
+      description={
+        {
           opencode: (
             <text fg={theme.textMuted}>
               {Brand.product} gives you access to supported coding models with a single API key.
@@ -499,7 +499,7 @@ function ApiMethod(props: ApiMethodProps) {
               {Brand.product} Go provides reliable access to popular open coding models with generous usage limits.
             </text>
           ),
-        })[props.providerID] ?? undefined
+        }[props.providerID] ?? undefined
       }
       onConfirm={async (value) => {
         if (!value) return
