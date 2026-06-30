@@ -489,7 +489,7 @@ export type Patch = Omit<Partial<Info>, "time" | "share" | "summary" | "revert" 
   permission?: Info["permission"] | null
 }
 
-export const layer: Layer.Layer<
+const layer: Layer.Layer<
   Service,
   never,
   BackgroundJob.Service | RuntimeFlags.Service | Database.Service | EventV2Bridge.Service
@@ -939,19 +939,6 @@ export const layer: Layer.Layer<
       findMessage,
     })
   }),
-)
-
-export const defaultLayer = layer.pipe(
-  Layer.provide(BackgroundJob.defaultLayer),
-  Layer.provide(Database.defaultLayer),
-  Layer.provide(EventV2Bridge.defaultLayer),
-  Layer.provide(
-    SessionV2.defaultLayer.pipe(
-      Layer.provide(SessionExecutionLocal.defaultLayer),
-      Layer.provide(locationServiceMapLayer),
-    ),
-  ),
-  Layer.provide(RuntimeFlags.defaultLayer),
 )
 
 const cancelBackgroundJobs = Effect.fn("Session.cancelBackgroundJobs")(function* (

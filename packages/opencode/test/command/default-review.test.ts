@@ -1,4 +1,5 @@
 import { describe, expect } from "bun:test"
+import { LayerNode } from "@opencode-ai/core/effect/layer-node"
 import { Effect, Layer } from "effect"
 import { Command } from "../../src/command"
 import { Config } from "../../src/config/config"
@@ -44,11 +45,11 @@ const emptySkill = Layer.succeed(
 )
 
 const layer = (config: Config.Info = {}) =>
-  Command.layer.pipe(
-    Layer.provide(TestConfig.layer({ get: () => Effect.succeed(config), getGlobal: () => Effect.succeed(config) })),
-    Layer.provide(emptyMcp),
-    Layer.provide(emptySkill),
-  )
+  LayerNode.compile(Command.node, [
+    [Config.node, TestConfig.layer({ get: () => Effect.succeed(config), getGlobal: () => Effect.succeed(config) })],
+    [MCP.node, emptyMcp],
+    [Skill.node, emptySkill],
+  ])
 
 describe("default review command", () => {
   testEffect(layer({ review_model: "openai/gpt-5.4" })).instance("uses configured review_model", () =>

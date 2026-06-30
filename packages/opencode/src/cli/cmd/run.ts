@@ -234,7 +234,14 @@ export const RunCommand = effectCmd({
         hidden: true,
         describe: "cap visible interactive replay to the newest N messages",
       })
-      .option("dangerously-skip-permissions", {
+      .option("interactive", {
+        alias: ["i"],
+        type: "boolean",
+        describe: "run in direct interactive split-footer mode",
+        default: false,
+      })
+      .option("auto", {
+        alias: ["yolo", "dangerously-skip-permissions"],
         type: "boolean",
         describe: "auto-approve permissions that are not explicitly denied (dangerous!)",
         default: false,
@@ -781,7 +788,7 @@ export const RunCommand = effectCmd({
               const permission = event.properties
               if (permission.sessionID !== sessionID) continue
 
-              if (args["dangerously-skip-permissions"]) {
+              if (args.auto) {
                 await client.permission.reply({
                   requestID: permission.id,
                   reply: "once",
@@ -982,9 +989,12 @@ export async function runMini(input: MiniCommandInput) {
     variant: undefined,
     thinking: undefined,
     mini: true,
+    interactive: false,
     replay: input.replay ?? true,
     "replay-limit": input.replayLimit,
     replayLimit: input.replayLimit,
+    auto: false,
+    yolo: false,
     "dangerously-skip-permissions": false,
     dangerouslySkipPermissions: false,
     demo: input.demo ?? false,
