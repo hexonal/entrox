@@ -5,12 +5,14 @@ import { Deferred, Effect, Layer } from "effect"
 import type * as Scope from "effect/Scope"
 import { HttpServer } from "effect/unstable/http"
 import { ChildProcessSpawner } from "effect/unstable/process"
+import { AppNodeBuilder } from "@opencode-ai/core/effect/app-node-builder"
+import { LayerNode } from "@opencode-ai/core/effect/layer-node"
 import { FSUtil } from "@opencode-ai/core/fs-util"
 import { CrossSpawnSpawner } from "@opencode-ai/core/cross-spawn-spawner"
 import { Flag } from "@opencode-ai/core/flag/flag"
 import { createOpencodeClient } from "@opencode-ai/sdk/v2"
 import { validateSession } from "../../src/cli/tui/validate-session"
-import { InstanceBootstrap } from "../../src/project/bootstrap-service"
+import { InstanceBootstrap } from "../../src/project/bootstrap"
 import { InstanceStore } from "../../src/project/instance-store"
 import { MessageID, PartID, SessionID } from "../../src/session/schema"
 import { MessageV2 } from "../../src/session/message-v2"
@@ -31,16 +33,12 @@ import { Database } from "@opencode-ai/core/database/database"
 import { httpApiLayer } from "./httpapi-layer"
 import { Global } from "@opencode-ai/core/global"
 
-const noopBootstrap = Layer.succeed(InstanceBootstrap.Service, InstanceBootstrap.Service.of({ run: Effect.void }))
-const it = testEffect(
-  Layer.mergeAll(
-    FSUtil.defaultLayer,
-    CrossSpawnSpawner.defaultLayer,
-    InstanceStore.defaultLayer.pipe(Layer.provide(noopBootstrap)),
-    Database.defaultLayer,
-    httpApiLayer,
-  ),
+const noopBootstrapLayer = Layer.succeed(InstanceBootstrap.Service, InstanceBootstrap.Service.of({ run: Effect.void }))
+const appLayer = AppNodeBuilder.build(
+  LayerNode.group([FSUtil.node, CrossSpawnSpawner.node, InstanceStore.node, Database.node, SessionNs.node]),
+  [[InstanceStore.bootstrapNode, noopBootstrapLayer]],
 )
+const it = testEffect(Layer.mergeAll(appLayer, httpApiLayer))
 
 const original = {
   OPENCODE_SERVER_PASSWORD: Flag.OPENCODE_SERVER_PASSWORD,
@@ -57,6 +55,7 @@ type TestServices =
   | FSUtil.Service
   | ChildProcessSpawner.ChildProcessSpawner
   | InstanceStore.Service
+  | SessionNs.Service
   | HttpServer.HttpServer
 type TestScope = Scope.Scope | TestServices
 
@@ -333,7 +332,7 @@ function seedMessage(directory: string, sessionID: string) {
           })
           return { message, part }
         }),
-      ).pipe(Effect.provide(SessionNs.defaultLayer)),
+      ),
     ),
   )
 }
