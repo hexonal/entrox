@@ -2,6 +2,7 @@ import { afterEach, expect, test } from "bun:test"
 import { mkdir, unlink } from "fs/promises"
 import path from "path"
 import { LayerNode } from "@opencode-ai/core/effect/layer-node"
+import { AppNodeBuilder } from "@opencode-ai/core/effect/app-node-builder"
 import { Effect, Layer } from "effect"
 import { ModelsDev } from "@opencode-ai/core/models-dev"
 import { FSUtil } from "@opencode-ai/core/fs-util"
@@ -1788,7 +1789,7 @@ const instanceStoreLayer = LayerNode.compile(InstanceStore.node, [
   [InstanceStore.bootstrapNode, InstanceBootstrap.node],
 ])
 const provideMultiInstance = <A, E, R>(eff: Effect.Effect<A, E, R>) =>
-  eff.pipe(Effect.provide(instanceStoreLayer), Effect.provide(CrossSpawnSpawner.defaultLayer))
+  eff.pipe(Effect.provide(instanceStoreLayer), Effect.provide(AppNodeBuilder.build(CrossSpawnSpawner.node)))
 
 it.effect("plugin config providers persist after instance dispose", () =>
   Effect.gen(function* () {
@@ -1891,7 +1892,7 @@ it.effect("opencode loader keeps paid models when config apiKey is present", () 
       Provider.use
         .list()
         .pipe(provideInstanceEffect(directory))
-        .pipe(Effect.provide(instanceStoreLayer), Effect.provide(CrossSpawnSpawner.defaultLayer))
+        .pipe(Effect.provide(instanceStoreLayer), Effect.provide(AppNodeBuilder.build(CrossSpawnSpawner.node)))
 
     const none = paid(yield* listIn(noneDir))
     const keyedCount = paid(yield* listIn(keyedDir))
@@ -1910,7 +1911,7 @@ it.effect("opencode loader keeps paid models when auth exists", () =>
       Provider.use
         .list()
         .pipe(provideInstanceEffect(directory))
-        .pipe(Effect.provide(instanceStoreLayer), Effect.provide(CrossSpawnSpawner.defaultLayer))
+        .pipe(Effect.provide(instanceStoreLayer), Effect.provide(AppNodeBuilder.build(CrossSpawnSpawner.node)))
 
     const none = paid(yield* listIn(noneDir))
 

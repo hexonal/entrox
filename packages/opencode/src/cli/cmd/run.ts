@@ -241,9 +241,18 @@ export const RunCommand = effectCmd({
         default: false,
       })
       .option("auto", {
-        alias: ["yolo", "dangerously-skip-permissions"],
         type: "boolean",
         describe: "auto-approve permissions that are not explicitly denied (dangerous!)",
+        default: false,
+      })
+      .option("yolo", {
+        type: "boolean",
+        hidden: true,
+        default: false,
+      })
+      .option("dangerously-skip-permissions", {
+        type: "boolean",
+        hidden: true,
         default: false,
       })
       .option("demo", {
@@ -263,6 +272,7 @@ export const RunCommand = effectCmd({
     yield* Effect.promise(async () => {
       const rawMessage = [...args.message, ...(args["--"] || [])].join(" ")
       const interactive = args.mini
+      const auto = args.auto || args.yolo || args["dangerously-skip-permissions"]
       const thinking = interactive ? (args.thinking ?? true) : (args.thinking ?? false)
       const die = (message: string): never => {
         UI.error(message)
@@ -788,7 +798,7 @@ export const RunCommand = effectCmd({
               const permission = event.properties
               if (permission.sessionID !== sessionID) continue
 
-              if (args.auto) {
+              if (auto) {
                 await client.permission.reply({
                   requestID: permission.id,
                   reply: "once",
