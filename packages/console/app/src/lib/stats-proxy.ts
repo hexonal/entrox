@@ -40,7 +40,7 @@ export async function statsProxy(evt: APIEvent) {
   headers.delete("content-encoding")
   headers.delete("content-length")
   headers.delete("etag")
-  appendVary(headers, "Accept-Language", "Cookie")
+  appendVary(headers, "Accept-Language", "Cookie", LOCALE_HEADER)
 
   return new Response(brandPublicText(rewriteStatsHtml(await response.text())), {
     status: response.status,
@@ -79,7 +79,7 @@ function redirectToLocalizedData(request: Request, url: URL, locale: ReturnType<
     Location: next.toString(),
   })
   headers.append("set-cookie", cookie(locale))
-  appendVary(headers, "Accept-Language", "Cookie")
+  appendVary(headers, "Accept-Language", "Cookie", LOCALE_HEADER)
 
   return new Response(null, {
     status: 308,
