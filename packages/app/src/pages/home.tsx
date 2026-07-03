@@ -553,7 +553,6 @@ export function NewHome() {
             results={searchResults()}
             showProjectName={!selectedProject()}
             server={selection().server}
-            activeServer={selection().server === server.key}
             noResultsLabel={language.t("home.sessions.search.noResults", { query: search() })}
             bindFocus={(focus) => {
               focusSessionSearch = focus
@@ -613,7 +612,6 @@ export function NewHome() {
                                 record={record}
                                 showProjectName={!selectedProject()}
                                 server={selection().server}
-                                activeServer={selection().server === server.key}
                                 openSession={openSession}
                                 archiveSession={archiveSession}
                               />
@@ -997,7 +995,6 @@ function HomeSessionLeading(props: {
   project: LocalProject
   session: Session
   server: ServerConnection.Key
-  activeServer: boolean
   revealProjectOnHover: boolean
 }) {
   const tabs = useTabs()
@@ -1015,7 +1012,7 @@ function HomeSessionLeading(props: {
         project={props.project}
         directory={props.session.directory}
         sessionId={props.session.id}
-        activeServer={props.activeServer}
+        server={props.server}
         revealProjectOnHover={props.revealProjectOnHover}
       />
     </div>
@@ -1030,7 +1027,6 @@ function HomeSessionSearch(props: {
   results: HomeSessionRecord[]
   showProjectName: boolean
   server: ServerConnection.Key
-  activeServer: boolean
   noResultsLabel: string
   bindFocus: (focus: () => void) => void
   onInput: (value: string) => void
@@ -1148,7 +1144,6 @@ function HomeSessionSearch(props: {
                                 record={record}
                                 showProjectName={props.showProjectName}
                                 server={props.server}
-                                activeServer={props.activeServer}
                                 selected={store.active === homeSessionSearchKey(record)}
                                 onHighlight={() => setStore("active", homeSessionSearchKey(record))}
                                 onSelect={(session) => props.onSelect(session)}
@@ -1229,7 +1224,6 @@ function HomeSessionSearchResultRow(props: {
   record: HomeSessionRecord
   showProjectName: boolean
   server: ServerConnection.Key
-  activeServer: boolean
   selected: boolean
   onHighlight: () => void
   onSelect: (session: Session) => void
@@ -1259,7 +1253,6 @@ function HomeSessionSearchResultRow(props: {
         project={props.record.project}
         session={props.record.session}
         server={props.server}
-        activeServer={props.activeServer}
         revealProjectOnHover={!!showProjectName()}
       />
       <div class="flex min-w-0 flex-1 items-center gap-1.5">
@@ -1298,7 +1291,6 @@ function HomeSessionRow(props: {
   record: HomeSessionRecord
   showProjectName: boolean
   server: ServerConnection.Key
-  activeServer: boolean
   openSession: (session: Session) => void
   archiveSession: (session: Session) => Promise<void>
 }) {
@@ -1321,7 +1313,6 @@ function HomeSessionRow(props: {
           project={props.record.project}
           session={props.record.session}
           server={props.server}
-          activeServer={props.activeServer}
           revealProjectOnHover={!!showProjectName()}
         />
         <span
